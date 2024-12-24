@@ -1,36 +1,57 @@
 #include "../inc/ft_strace.h"
 
 t_exec executable;
+const char* syscall_names[] = {
+    [0]  = "read",
+    [1]  = "write",
+    [2]  = "open",
+    [3]  = "close",
+    [5]  = "fstat", 
+    [56] = "clone",
+    [57] = "fork",
+    [58] = "vfork",
+    [59] = "execve",
+    [231] = "exit_group", 
+    [262] = "newfstatat", 
+};
 
-void parse_args(int ac, char **av) {
+static int init_exec_struct(int ac, char **av, char **envp) {
+    int len_envp = 0;
 
-    executable.cmd = strdup(av[1]);
     executable.absolute_path = get_absolute_path(av[1]);
+    executable.cmd = strdup(av[1]);
     executable.args = calloc(ac, sizeof(char *));
-    if (!executable.args) {
-        perror("calloc");
-        exit(EXIT_FAILURE);
-    } 
+    if (!executable.args)
+        return 1;
     for (int i = 1; i < ac; i++)
         executable.args[i - 1]  = strdup(av[i]);
+    while (envp[len_envp])
+        len_envp++;
+    executable.envp = calloc(len_envp + 1, sizeof(char *));
+    if (!executable.envp)
+        return 1;
+    for (int i = 0; executable.envp[i]; i++)
+        executable.envp[i] = strdup(envp[i]);
+
+    return 0;
 }
 
-void define_elf_type(uint8_t *file_data) {
+static int define_elf_type(uint8_t *file_data) {
     Elf64_Ehdr *file_hdr;
     file_hdr = (Elf64_Ehdr *) file_data;
 
     if (file_hdr->e_ident[EI_MAG0] != ELFMAG0 || file_hdr->e_ident[EI_MAG1] != ELFMAG1 ||
-            file_hdr->e_ident[EI_MAG2] != ELFMAG2 || file_hdr->e_ident[EI_MAG3] != ELFMAG3) {
-                fprintf(stderr, "ft_strace: file format not recognized\n ");
-                exit(EXIT_FAILURE);
-            }
+            file_hdr->e_ident[EI_MAG2] != ELFMAG2 || file_hdr->e_ident[EI_MAG3] != ELFMAG3)
+                return 1;
     else if (file_hdr->e_ident[EI_CLASS] == ELFCLASS32)
         executable.elf_type = 32;
     else if (file_hdr->e_ident[EI_CLASS] == ELFCLASS64)
         executable.elf_type = 64;
+    
+    return 0;
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av, char **envp) {
 
     struct stat buf;
     uint8_t *file_data;
@@ -39,7 +60,11 @@ int main(int ac, char **av) {
         fprintf(stderr, "Usage : ./%s [executable/command] to trace\n]", av[0]);
         exit(EXIT_FAILURE);
     }
-    parse_args(ac, av);
+    if (init_exec_struct(ac, av, envp)) {
+        perror("ft_strace: ");
+        free_exec_struct(executable);
+        exit(EXIT_FAILURE);
+    } 
     int fd = open(executable.absolute_path, O_RDONLY, S_IRUSR);
     if (fd == -1) {
         perror("ft_strace: ");
@@ -60,12 +85,19 @@ int main(int ac, char **av) {
         fprintf(stderr, "ft_strace: %s: mapped memory failed\n", av[1]);
         exit(EXIT_FAILURE);
     }
+    if (define_elf_type(file_data)) {
+        fprintf(stderr, "ft_strace: file format not recognized\n ");
+        munmap(file_data, buf.st_size);
+        free_exec_struct(executable);
+        close(fd);
+        exit(EXIT_FAILURE);
+    } 
+    munmap(file_data, buf.st_size);
+    trace_exec(executable);
+    close(fd);
+    return 0;
+}
+
     //for (int i = 0; i < buf.st_size; i++) {
    //     printf("%c", file_data[i]);
    // }
-    define_elf_type(file_data);
-    printf("%d\n ", executable.elf_type);
-    munmap(file_data, buf.st_size);
-    close(fd);
-    return 0;
-}  

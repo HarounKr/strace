@@ -109,3 +109,14 @@ void	free_tab(char **tab)
 	}
 	free(tab);
 }
+
+void free_exec_struct(t_exec executable) {
+	if (executable.cmd)
+		free(executable.cmd);
+	if (executable.absolute_path)
+		free(executable.absolute_path);
+	if (executable.args)
+		free_tab(executable.args);
+	if (executable.envp)
+		free_tab(executable.envp);
+} 

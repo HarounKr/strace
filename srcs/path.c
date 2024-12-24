@@ -21,7 +21,7 @@ char *get_absolute_path(const char *cmd) {
         free_tab(split_path);
     }
     if (!path_found) {
-        absolute_path = calloc(4096, sizeof(char ));
+        absolute_path = calloc(PATH_MAX, sizeof(char ));
         if (!absolute_path) {
             perror("calloc");
             exit(EXIT_FAILURE);
