@@ -1,5 +1,33 @@
 #include "../inc/ft_strace.h"
 
+char	*ft_substr(char const *s, unsigned int start, size_t len)
+{
+	size_t	i;
+	size_t	b;
+	char	*new;
+
+	i = -1;
+	b = start;
+	if (!s)
+		return (NULL);
+	if (start > strlen(s))
+		return (strdup(""));
+	while (s[b] && ++i < len)
+		b++;
+	new = calloc(sizeof(*new), i + 1);
+	if (!new)
+		return (NULL);
+	i = 0;
+	while (s[start] && i < len)
+	{
+		new[i] = s[start];
+		i++;
+		start++;
+	}
+	new[i] = '\0';
+	return (new);
+}
+
 char	*ft_strjoin(char const *s1, char const *s2)
 {
 	size_t		i;

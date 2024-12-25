@@ -19,8 +19,6 @@
 //#include <sys/siginfo.h>
 
 #define PATH_MAX 4096
-extern const char* syscall_names[];
-
 
 typedef struct s_exec {
     char *cmd;
@@ -39,3 +37,5 @@ int     trace_exec(t_exec executable);
 char    *get_absolute_path(const char *cmd );
 char	*ft_strjoin(char const *s1, char const *s2);
 char	**ft_split(char const *str, char set);
+char    **get_syscall_names();
+char	*ft_substr(char const *s, unsigned int start, size_t len);

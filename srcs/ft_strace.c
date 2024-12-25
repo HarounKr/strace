@@ -1,19 +1,6 @@
 #include "../inc/ft_strace.h"
 
 t_exec executable;
-const char* syscall_names[] = {
-    [0]  = "read",
-    [1]  = "write",
-    [2]  = "open",
-    [3]  = "close",
-    [5]  = "fstat", 
-    [56] = "clone",
-    [57] = "fork",
-    [58] = "vfork",
-    [59] = "execve",
-    [231] = "exit_group", 
-    [262] = "newfstatat", 
-};
 
 static int init_exec_struct(int ac, char **av, char **envp) {
     int len_envp = 0;
@@ -55,7 +42,7 @@ int main(int ac, char **av, char **envp) {
 
     struct stat buf;
     uint8_t *file_data;
-
+    
     if (ac < 2) {
         fprintf(stderr, "Usage : ./%s [executable/command] to trace\n]", av[0]);
         exit(EXIT_FAILURE);
@@ -94,6 +81,7 @@ int main(int ac, char **av, char **envp) {
     } 
     munmap(file_data, buf.st_size);
     trace_exec(executable);
+    free_exec_struct(executable);
     close(fd);
     return 0;
 }
