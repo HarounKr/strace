@@ -4,6 +4,85 @@
 // https://man7.org/linux/man-pages/man2/ptrace.2.html
 // https://man7.org/linux/man-pages/man2/process_vm_readv.2.html
 
+
+int peekint(unsigned long addr){
+    return (int) addr;
+}
+
+unsigned long peekptr(pid_t pid, unsigned long addr) {
+    unsigned long val;
+    char mem_path[64];
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
+
+    int fd = open(mem_path, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+    off_t pos = lseek(fd, (off_t)addr, SEEK_SET);
+    if (pos == -1) {
+        close(fd);
+        return -1;
+    }
+
+    ssize_t n_read = read(fd, &val, sizeof(val));
+     if (n_read < 0) {
+        close(fd);
+        return -1;
+    } 
+    close(fd);
+    return val;
+}
+
+char *peekstr(pid_t pid, unsigned long addr) {
+  
+    char mem_path[64];
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
+
+    int fd = open(mem_path, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return NULL;
+    }
+    char *buf = calloc(sizeof(char), 256);
+    if (!buf) {
+        close(fd);
+        return NULL;
+    }
+    off_t pos = lseek(fd, (off_t)addr, SEEK_SET);
+    if (pos == -1) {
+        free(buf);
+        close(fd);
+        return NULL;
+    }
+
+    ssize_t n_read = read(fd, buf, 256);
+    if (n_read < 0) {
+        free(buf);
+        close(fd);
+        return NULL;
+    } 
+    buf[n_read] = '\0';
+
+    close(fd);
+    return buf;
+}
+
+char **peekdoubleptr(pid_t pid, unsigned long addr) {
+
+    bool is_alive = true;
+    unsigned long ptr_value = peekptr(pid, addr);
+    char **doubleptr = NULL;
+
+    while (is_alive) {
+        char *str = peekstr(pid, ptr_value);
+        if (*str == '\0')
+            is_alive = false;
+        ptr_value += sizeof(ptr_value);
+    }
+    return  doubleptr;
+}
+
 int trace_exec(t_exec executable) {
 
     int status;
@@ -11,6 +90,7 @@ int trace_exec(t_exec executable) {
     bool is_alive = true;
     bool is_preexit = true;
     is_child = fork();
+
     if (!is_child) { 
         ptrace(PTRACE_TRACEME);
         pid_t child_pid = getpid();
@@ -48,19 +128,28 @@ int trace_exec(t_exec executable) {
                 if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP | 0x80)){ // SIGTRAP | 0x80 = 133
                     //printf("Appel système intercepté !\n");
                     ptrace(PTRACE_GETREGSET, is_child, (void *)NT_PRSTATUS,&io );
-                    unsigned long syscall_num = regs.orig_rax;
-                    if (is_preexit){
-                        printf("Syscall name : %s\n ", syscall_names[syscall_num] );
+                    //unsigned long syscall_num = regs.orig_rax;
+                    if (is_preexit) {
+                        //printf("Syscall name : %s\n ", syscall_names[syscall_num] );
                         is_preexit = ! is_preexit;
+                        if (!strcmp(syscall_names[regs.orig_rax], "execve")){
+                            printf( "rdi: %s\n", peekstr(is_child, regs.rdi));
+                            peekdoubleptr(is_child, regs.rsi);
+                            printf( "rdx: %ld\n", peekptr(is_child, regs.rdx));
+                            //printf( "%s\n", read_string(is_child, regs.rdi));
+                            //printf( "%s\n", read_string(is_child, regs.rsi));
+                            //printf( "%s\n", read_string(is_child, regs.rdx));
+                        } 
                     } else {
                         is_preexit = ! is_preexit;
+                        // lire rax pour la valeur de retour
                 }
                     }
-                    // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx)
+                    // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx, rax)
                     //printf("Syscall num : %ld rdi: %lld rsi: %lld rdx: %lld\n ", syscall_num, regs.rdi, regs.rsi, regs.rdx);
                 else if (WIFSTOPPED(status)) {
-                    int sig_num = WSTOPSIG(status);
-                    printf("Le fils a été stopé avec le signal : %d\n ", sig_num);
+                   // int sig_num = WSTOPSIG(status);
+                   // printf("Le fils a été stopé avec le signal : %d\n ", sig_num);
                 }
                 ptrace(PTRACE_SYSCALL, is_child, NULL, NULL);
             } 

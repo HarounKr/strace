@@ -25,6 +25,7 @@ static int init_exec_struct(int ac, char **av, char **envp) {
 
 static int define_elf_type(uint8_t *file_data) {
     Elf64_Ehdr *file_hdr;
+
     file_hdr = (Elf64_Ehdr *) file_data;
 
     if (file_hdr->e_ident[EI_MAG0] != ELFMAG0 || file_hdr->e_ident[EI_MAG1] != ELFMAG1 ||
@@ -44,7 +45,7 @@ int main(int ac, char **av, char **envp) {
     uint8_t *file_data;
     
     if (ac < 2) {
-        fprintf(stderr, "Usage : ./%s [executable/command] to trace\n]", av[0]);
+        fprintf(stderr, "Usage : %s [executable/command] to trace\n]", av[0]);
         exit(EXIT_FAILURE);
     }
     if (init_exec_struct(ac, av, envp)) {
