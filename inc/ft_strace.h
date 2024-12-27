@@ -28,11 +28,19 @@ typedef struct s_exec {
     int elf_type;
 } t_exec;
 
+typedef struct {
+    char *name;
+    int arg_count;
+    char *arg_types[6];
+} Syscall;
+
+extern Syscall syscalls[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
 
 int     trace_exec(t_exec executable);
+bool    is_addr_mapped(pid_t pid, unsigned long addr);
 
 char    *get_absolute_path(const char *cmd );
 char	*ft_strjoin(char const *s1, char const *s2);

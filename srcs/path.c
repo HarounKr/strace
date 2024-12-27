@@ -11,6 +11,7 @@ char *get_absolute_path(const char *cmd) {
         for (int i = 0; split_path[i]; i++) {
             char *prefix_path = ft_strjoin(split_path[i], "/");
             char *path_to_test = ft_strjoin(prefix_path, cmd);
+
             if (!access(path_to_test, F_OK)) {
                 absolute_path = strdup(path_to_test);
                 path_found = true;
