@@ -74,17 +74,41 @@ char *peekstr(pid_t pid, unsigned long addr) {
     return NULL;
 }
 
+
 char **peekdoubleptr(pid_t pid, unsigned long addr) {
 
     bool is_alive = true;
-    unsigned long ptr_value = peekptr(pid, addr);
+    unsigned long i = 0;
     char **doubleptr = NULL;
 
     while (is_alive) {
-        char *str = peekstr(pid, ptr_value);
-        if (*str == '\0')
-            is_alive = false;
-        ptr_value += sizeof(ptr_value);
+        unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
+        if (ptr_value == 0 || (long) ptr_value == -1)
+            break;
+        i++;
+    }
+    if (i > 10) {
+        doubleptr = calloc(2, sizeof(char *));
+        printf(" ici ?");
+        char buf[256];
+        snprintf(buf, 256, "%lx /* %d vars */", addr, (int) i);
+        doubleptr[0] = strdup(buf); 
+    }
+    else {
+        doubleptr = calloc(i + 1, sizeof(char *));
+        i = 0;
+        while (is_alive) {
+            unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
+            if (ptr_value == 0 || (long) ptr_value == -1)
+                break;
+            char *str = peekstr(pid, ptr_value);
+            if (str == NULL) {
+                free(str);
+                break ;
+            }
+            doubleptr[i] = str;
+            i++;
+        }
     }
     return  doubleptr;
 }
@@ -92,10 +116,12 @@ char **peekdoubleptr(pid_t pid, unsigned long addr) {
 int trace_exec(t_exec executable) {
 
     int status;
+    int exit_code = 0;
     pid_t is_child;
     bool is_alive = true;
     bool is_preexit = true;
     is_child = fork();
+    int i = 0;
 
     if (!is_child) {
         if (execve(executable.absolute_path, executable.args, executable.envp) == -1)
@@ -122,42 +148,47 @@ int trace_exec(t_exec executable) {
                 if (syscall_names == NULL)
                     return 1;
                 if (WIFEXITED(status)) {
-                    int exit_code = WEXITSTATUS(status);
-                    printf("Exit code : %d\n ", exit_code);
+                    exit_code = WEXITSTATUS(status);
+                    //printf("Exit code : %d\n ", exit_code);
                     free_tab(syscall_names);
-                    is_alive = false;
+                    return exit_code;
                 }
                 if (WIFSIGNALED(status)) {
-                    int sig_num = WTERMSIG(status);
-                    printf("Le fils a été terminé avec le signal : %d\n ", sig_num);
+                    //int sig_num = WTERMSIG(status);
+                    
+                    //printf("Le fils a été terminé avec le signal : %d\n ", sig_num);
                 }
                 if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP | 0x80)){ // SIGTRAP | 0x80 = 133
                     //printf("Appel système intercepté !\n");
                     ptrace(PTRACE_GETREGSET, is_child, (void *)NT_PRSTATUS,&io );
-                    unsigned long syscall_num = regs.orig_rax;
+                   unsigned long syscall_num = regs.orig_rax;
                 
                     if (is_preexit) { // Entrée d'un syscall
                         printf("%s\n ", syscall_names[syscall_num] );
                         is_preexit = ! is_preexit;
-                        //if (!strcmp(syscall_names[regs.orig_rax], "execve")){
-                           // peekdoubleptr(is_child, regs.rsi);
-                            printf( "rdi: %s\n", peekstr(is_child, regs.rdi));
-                            printf( "rsi: %ld\n", peekptr(is_child, regs.rsi));
-                            printf( "rdx: %ld\n", peekptr(is_child, regs.rdx));
-                        //} 
+                        if (!strcmp(syscall_names[regs.orig_rax], "execve")){
+                            char *arg1 = peekstr(is_child, regs.rdi);
+                            char **rsi = peekdoubleptr(is_child, regs.rdx);
+                            char *arg2 = to_string(rsi);
+                            fprintf(stdout, "%s(\"%s\", %s)\n", syscall_names[syscall_num], arg1, arg2);
+                            free_tab(rsi);
+
+                        } 
                     } else { // Sortie d'un syscall
                         is_preexit = ! is_preexit;
-                        printf("rax: %lld\n", regs.rax);
+                        //printf("rax: %lld\n", regs.rax);
                     }
                 } 
                     // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx, rax)
                     //printf("Syscall num : %ld rdi: %lld rsi: %lld rdx: %lld\n ", syscall_num, regs.rdi, regs.rsi, regs.rdx);
                 else if (WIFSTOPPED(status)) {
-                   int sig_num = WSTOPSIG(status);
-                   printf("Le fils a été stopé avec le signal : %d\n ", sig_num);
+                   //int sig_num = WSTOPSIG(status);
+                   //printf("Le fils a été stopé avec le signal : %d\n ", sig_num);
                 }
-                ptrace(PTRACE_SYSCALL, is_child, NULL, NULL);
+                if (i <= 1)
+                    ptrace(PTRACE_SYSCALL, is_child, NULL, NULL);
+                i++;
             } 
     }
-    return 0;
+    return exit_code;
 } 

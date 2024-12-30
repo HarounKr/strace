@@ -138,6 +138,15 @@ void	free_tab(char **tab)
 	free(tab);
 }
 
+size_t tab_size(char **tab) {
+	size_t size = 0;
+
+	while (tab[size])
+		size++;
+
+	return size;
+}
+
 void free_exec_struct(t_exec executable) {
 	if (executable.cmd)
 		free(executable.cmd);

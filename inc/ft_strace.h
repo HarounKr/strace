@@ -28,22 +28,33 @@ typedef struct s_exec {
     int elf_type;
 } t_exec;
 
-typedef struct {
+typedef struct s_sycall {
     char *name;
     int arg_count;
     char *arg_types[6];
-} Syscall;
+} t_syscall;
 
-extern Syscall syscalls[];
+typedef struct s_output {
+    char *arg1;
+    char *arg2;
+    char *arg3;
+    char *arg4;
+    char *arg5;
+    char *arg6;
+}  t_output;
+
+extern  t_syscall syscalls[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
 
 int     trace_exec(t_exec executable);
 bool    is_addr_mapped(pid_t pid, unsigned long addr);
+size_t  tab_size(char **tab);
 
 char    *get_absolute_path(const char *cmd );
 char	*ft_strjoin(char const *s1, char const *s2);
 char	**ft_split(char const *str, char set);
 char    **get_syscall_names();
 char	*ft_substr(char const *s, unsigned int start, size_t len);
+char    *to_string(char **tab);

@@ -17,7 +17,7 @@ static int init_exec_struct(int ac, char **av, char **envp) {
     executable.envp = calloc(len_envp + 1, sizeof(char *));
     if (!executable.envp)
         return 1;
-    for (int i = 0; executable.envp[i]; i++)
+    for (int i = 0; envp[i] ; i++)
         executable.envp[i] = strdup(envp[i]);
 
     return 0;
