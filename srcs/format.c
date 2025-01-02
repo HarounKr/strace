@@ -1,5 +1,6 @@
 #include "../inc/ft_strace.h"
 
+
 char *to_string(char **tab) {
     if (tab == NULL)
         return strdup("[]");
@@ -37,4 +38,58 @@ char *to_string(char **tab) {
     str[ret] = '\0';
 
     return str;
+}
+
+static int format_args(user_regs_struct regs, char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+    if (!strcmp(arg_type, "int") || !strcmp(arg_type, "long"))
+        fprintf(stdout, "%ld", peekint(reg_addr));
+    else if (!strcmp(arg_type, "unsigned long") || !strcmp(arg_type, "unsigned int"))
+        fprintf(stdout, "%lu", peekint(reg_addr));
+    else if (!strcmp(arg_type, "char*")) {
+        char *str = peekdata(pid, regs.rdi, 256);
+        if (str) {
+            fprintf(stdout, "%s", (char *)peekdata(pid, reg_addr, 256));
+            free(str);
+        } else
+            return 1;
+    }
+    else if (!strcmp(arg_type, "char**")) {
+        char doubleptr = peekdoubleptr(pid, reg_addr);
+        if (doubleptr) {
+
+        } else
+            return 1;
+    }
+    else if (!strcmp(arg_type, "void*"))
+        fprintf(stdout, "void*");
+    else if (!strcmp(arg_type, "int*")) {
+        int *value = peekdata(pid, reg_addr, sizeof(int));
+        if (value) {
+            fprintf(stdout, "%d", value[0]);
+            free(value);
+        } else
+            return 1;
+    }
+    else if (!strncmp(arg_type, "struct", strlen("struct")) || !strncmp(arg_type, "sigset_t", strlen("sigset_t"))
+        )
+        fprintf(stdout, "%s", arg_type);
+
+    return 0;
+}
+
+void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
+    if (n_args == 0) {
+        fprintf(stdout, "void)");
+        return ;
+    }
+
+    unsigned long long int regs_addr[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};
+
+    for (int i = 0; syscalls[index].arg_types[i]; i++) {
+        unsigned long long int addr = regs_addr[i];
+        
+        char *arg_type = syscalls[index].arg_types[i];
+        if (format_args(regs, arg_type, pid, addr))
+            fprintf(stdout, "NULL");
+    }
 }

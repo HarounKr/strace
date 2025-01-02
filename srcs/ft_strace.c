@@ -14,11 +14,7 @@ static int init_exec_struct(int ac, char **av, char **envp) {
         executable.args[i - 1]  = strdup(av[i]);
     while (envp[len_envp])
         len_envp++;
-    executable.envp = calloc(len_envp + 1, sizeof(char *));
-    if (!executable.envp)
-        return 1;
-    for (int i = 0; envp[i] ; i++)
-        executable.envp[i] = strdup(envp[i]);
+    executable.envp = envp;
 
     return 0;
 }
@@ -81,9 +77,9 @@ int main(int ac, char **av, char **envp) {
         exit(EXIT_FAILURE);
     } 
     munmap(file_data, buf.st_size);
+    close(fd);
     trace_exec(executable);
     free_exec_struct(executable);
-    close(fd);
     return 0;
 }
 

@@ -9,15 +9,13 @@ char *get_absolute_path(const char *cmd) {
     if (env_path) {
         char **split_path = ft_split(env_path, ':');
         for (int i = 0; split_path[i]; i++) {
-            char *prefix_path = ft_strjoin(split_path[i], "/");
-            char *path_to_test = ft_strjoin(prefix_path, cmd);
+            char path_to_test[256];
+            snprintf(path_to_test, 256, "%s/%s", split_path[i], cmd);  
 
             if (!access(path_to_test, F_OK)) {
                 absolute_path = strdup(path_to_test);
                 path_found = true;
             }
-            free(prefix_path);
-            free(path_to_test);
         }
         free_tab(split_path);
     }

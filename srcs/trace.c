@@ -5,114 +5,6 @@
 // https://man7.org/linux/man-pages/man2/process_vm_readv.2.html
 
 
-int peekint(unsigned long addr){
-    return (int) addr;
-}
-
-unsigned long peekptr(pid_t pid, unsigned long addr) {
-    if (is_addr_mapped(pid, addr)) {
-         unsigned long val;
-        char mem_path[64];
-        snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
-
-        int fd = open(mem_path, O_RDONLY);
-        if (fd < 0) {
-            perror("open");
-            return -1;
-        }
-        off_t pos = lseek(fd, (off_t)addr, SEEK_SET);
-        if (pos == -1) {
-            close(fd);
-            return -1;
-        }
-
-        ssize_t n_read = read(fd, &val, sizeof(val));
-        if (n_read < 0) {
-            close(fd);
-            return -1;
-        } 
-        close(fd);
-        return val;
-    }
-    return -1;
-}
-
-char *peekstr(pid_t pid, unsigned long addr) {
-
-    if (is_addr_mapped(pid, addr)) {
-        char mem_path[64];
-        snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
-
-        int fd = open(mem_path, O_RDONLY);
-        if (fd < 0) {
-            perror("open");
-            return NULL;
-        }
-        char *buf = calloc(sizeof(char), 256);
-        if (!buf) {
-            close(fd);
-            return NULL;
-        }
-        off_t pos = lseek(fd, (off_t)addr, SEEK_SET);
-        if (pos == -1) {
-            free(buf);
-            close(fd);
-            return NULL;
-        }
-
-        ssize_t n_read = read(fd, buf, 256);
-        if (n_read < 0) {
-            free(buf);
-            close(fd);
-            return NULL;
-        } 
-        buf[n_read] = '\0';
-
-        close(fd);
-        return buf;
-    }
-    return NULL;
-}
-
-
-char **peekdoubleptr(pid_t pid, unsigned long addr) {
-
-    bool is_alive = true;
-    unsigned long i = 0;
-    char **doubleptr = NULL;
-
-    while (is_alive) {
-        unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
-        if (ptr_value == 0 || (long) ptr_value == -1)
-            break;
-        i++;
-    }
-    if (i > 10) {
-        doubleptr = calloc(2, sizeof(char *));
-        printf(" ici ?");
-        char buf[256];
-        snprintf(buf, 256, "%lx /* %d vars */", addr, (int) i);
-        doubleptr[0] = strdup(buf); 
-    }
-    else {
-        doubleptr = calloc(i + 1, sizeof(char *));
-        i = 0;
-        while (is_alive) {
-            unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
-            if (ptr_value == 0 || (long) ptr_value == -1)
-                break;
-            char *str = peekstr(pid, ptr_value);
-            if (str == NULL) {
-                free(str);
-                break ;
-            }
-            doubleptr[i] = str;
-            i++;
-        }
-    }
-    return  doubleptr;
-}
-
 int trace_exec(t_exec executable) {
 
     int status;
@@ -137,8 +29,8 @@ int trace_exec(t_exec executable) {
 
             } 
             while (is_alive) {
-                struct user_regs_struct regs;
-                struct iovec io;
+                user_regs_struct regs;
+                iovec io;
 
                 io.iov_base = &regs;
                 io.iov_len = sizeof(regs);
@@ -161,32 +53,30 @@ int trace_exec(t_exec executable) {
                 if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP | 0x80)){ // SIGTRAP | 0x80 = 133
                     //printf("Appel système intercepté !\n");
                     ptrace(PTRACE_GETREGSET, is_child, (void *)NT_PRSTATUS,&io );
-                   unsigned long syscall_num = regs.orig_rax;
-                
-                    if (is_preexit) { // Entrée d'un syscall
-                        printf("%s\n ", syscall_names[syscall_num] );
-                        is_preexit = ! is_preexit;
-                        if (!strcmp(syscall_names[regs.orig_rax], "execve")){
-                            char *arg1 = peekstr(is_child, regs.rdi);
-                            char **rsi = peekdoubleptr(is_child, regs.rdx);
-                            char *arg2 = to_string(rsi);
-                            fprintf(stdout, "%s(\"%s\", %s)\n", syscall_names[syscall_num], arg1, arg2);
-                            free_tab(rsi);
+                // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx, rax)
+                    unsigned long syscall_num = regs.orig_rax;
+                    if (!strcmp(syscall_names[regs.orig_rax], "execve")) {
+                        if (is_preexit) { // Entrée d'un syscall
+                                printf("%s(", syscall_names[syscall_num] );
 
-                        } 
-                    } else { // Sortie d'un syscall
-                        is_preexit = ! is_preexit;
-                        //printf("rax: %lld\n", regs.rax);
+                                // format_output(regs, 1, 23, is_child);
+                                // char *arg1 = peekstr(is_child, regs.rdi);
+                                // printf("\"%s\"\n", arg1);
+                                // char **rsi = peekdoubleptr(is_child, regs.rdx);
+                                // printf("%s = ", to_string(rsi));
+                                // free_tab(rsi);
+                            }
+                        else { // Sortie d'un syscall
+                            printf(" = %llx\n", regs.rax);
+                        }
                     }
+                    is_preexit = !is_preexit;
                 } 
-                    // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx, rax)
-                    //printf("Syscall num : %ld rdi: %lld rsi: %lld rdx: %lld\n ", syscall_num, regs.rdi, regs.rsi, regs.rdx);
                 else if (WIFSTOPPED(status)) {
                    //int sig_num = WSTOPSIG(status);
                    //printf("Le fils a été stopé avec le signal : %d\n ", sig_num);
                 }
-                if (i <= 1)
-                    ptrace(PTRACE_SYSCALL, is_child, NULL, NULL);
+                ptrace(PTRACE_SYSCALL, is_child, NULL, NULL);
                 i++;
             } 
     }

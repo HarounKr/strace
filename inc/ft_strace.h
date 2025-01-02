@@ -20,6 +20,9 @@
 
 #define PATH_MAX 4096
 
+typedef struct user_regs_struct user_regs_struct;
+typedef struct iovec iovec;
+
 typedef struct s_exec {
     char *cmd;
     char *absolute_path;
@@ -34,27 +37,24 @@ typedef struct s_sycall {
     char *arg_types[6];
 } t_syscall;
 
-typedef struct s_output {
-    char *arg1;
-    char *arg2;
-    char *arg3;
-    char *arg4;
-    char *arg5;
-    char *arg6;
-}  t_output;
-
 extern  t_syscall syscalls[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
+void    format_output(user_regs_struct regs, int n_args, int index, pid_t pid);
+
+int     peekint(unsigned long addr);
 
 int     trace_exec(t_exec executable);
 bool    is_addr_mapped(pid_t pid, unsigned long addr);
 size_t  tab_size(char **tab);
+unsigned long peekptr(pid_t pid, unsigned long addr);
 
-char    *get_absolute_path(const char *cmd );
-char	*ft_strjoin(char const *s1, char const *s2);
-char	**ft_split(char const *str, char set);
-char    **get_syscall_names();
+char    *get_absolute_path(const char *cmd);
 char	*ft_substr(char const *s, unsigned int start, size_t len);
 char    *to_string(char **tab);
+void    *peekdata(pid_t pid, unsigned long addr, size_t size);
+
+char    **peekdoubleptr(pid_t pid, unsigned long addr) ;
+char	**ft_split(char const *str, char set);
+char    **get_syscall_names();
