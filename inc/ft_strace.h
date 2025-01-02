@@ -37,16 +37,20 @@ typedef struct s_sycall {
     char *arg_types[6];
 } t_syscall;
 
+typedef struct s_type {
+    char *name;
+    void (*func)(char *, pid_t, unsigned long long int);
+} t_type;
+
+
 extern  t_syscall syscalls[];
+extern t_type types[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
 void    format_output(user_regs_struct regs, int n_args, int index, pid_t pid);
 
-int     peekint(unsigned long addr);
-
 int     trace_exec(t_exec executable);
-bool    is_addr_mapped(pid_t pid, unsigned long addr);
 size_t  tab_size(char **tab);
 unsigned long peekptr(pid_t pid, unsigned long addr);
 

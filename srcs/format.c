@@ -1,6 +1,5 @@
 #include "../inc/ft_strace.h"
 
-
 char *to_string(char **tab) {
     if (tab == NULL)
         return strdup("[]");
@@ -40,41 +39,13 @@ char *to_string(char **tab) {
     return str;
 }
 
-static int format_args(user_regs_struct regs, char *arg_type, pid_t pid, unsigned long long int reg_addr) {
-    if (!strcmp(arg_type, "int") || !strcmp(arg_type, "long"))
-        fprintf(stdout, "%ld", peekint(reg_addr));
-    else if (!strcmp(arg_type, "unsigned long") || !strcmp(arg_type, "unsigned int"))
-        fprintf(stdout, "%lu", peekint(reg_addr));
-    else if (!strcmp(arg_type, "char*")) {
-        char *str = peekdata(pid, regs.rdi, 256);
-        if (str) {
-            fprintf(stdout, "%s", (char *)peekdata(pid, reg_addr, 256));
-            free(str);
-        } else
-            return 1;
+static void format_and_print_arg(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+    for (int i = 0; types[i].name != NULL; i++) {
+        if (!strcmp(arg_type, types[i].name)) {
+            printf("\n");
+            types[i].func(arg_type, pid, reg_addr);
+        }
     }
-    else if (!strcmp(arg_type, "char**")) {
-        char doubleptr = peekdoubleptr(pid, reg_addr);
-        if (doubleptr) {
-
-        } else
-            return 1;
-    }
-    else if (!strcmp(arg_type, "void*"))
-        fprintf(stdout, "void*");
-    else if (!strcmp(arg_type, "int*")) {
-        int *value = peekdata(pid, reg_addr, sizeof(int));
-        if (value) {
-            fprintf(stdout, "%d", value[0]);
-            free(value);
-        } else
-            return 1;
-    }
-    else if (!strncmp(arg_type, "struct", strlen("struct")) || !strncmp(arg_type, "sigset_t", strlen("sigset_t"))
-        )
-        fprintf(stdout, "%s", arg_type);
-
-    return 0;
 }
 
 void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
@@ -82,14 +53,22 @@ void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
         fprintf(stdout, "void)");
         return ;
     }
+    int width = 0;
+    fprintf(stdout, "%s(\n", syscalls[index].name);
 
     unsigned long long int regs_addr[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};
 
     for (int i = 0; syscalls[index].arg_types[i]; i++) {
         unsigned long long int addr = regs_addr[i];
-        
+
         char *arg_type = syscalls[index].arg_types[i];
-        if (format_args(regs, arg_type, pid, addr))
-            fprintf(stdout, "NULL");
+        
+            format_and_print_arg(arg_type, pid, addr);
+            if (i < n_args - 1)
+                fprintf(stdout, ", ");
+        
     }
+    if (syscalls[index].arg_count <= 1)
+        width = 30;
+    fprintf(stdout, ") =%*c", width, ' ');
 }

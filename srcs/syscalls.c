@@ -27,6 +27,7 @@ t_syscall syscalls[] = {
     {"getcpu", 0, {NULL}},
     // 1 arg
     {"exit", 1, {"int"}},
+    {"exit_group", 1, {"int"}},
     {"close", 1, {"int"}},
     {"unlink", 1, {"char*"}},
     {"rmdir", 1, {"char*"}},
@@ -46,6 +47,7 @@ t_syscall syscalls[] = {
     {"getpgid", 1, {"int"}},
     {"personality", 1, {"unsigned int"}},
     // 2 args
+    {"arch_prctl", 2, {"int", "unsigned int"}},
     {"open", 2, {"char*", "int"}},
     {"rename", 2, {"char*", "char*"}},
     {"mkdir", 2, {"char*", "unsigned int"}},

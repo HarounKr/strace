@@ -55,19 +55,19 @@ int trace_exec(t_exec executable) {
                     ptrace(PTRACE_GETREGSET, is_child, (void *)NT_PRSTATUS,&io );
                 // lire aussi les registres pour obtenir les adresses des arguments (rdi, rsi, rdx, rax)
                     unsigned long syscall_num = regs.orig_rax;
-                    if (!strcmp(syscall_names[regs.orig_rax], "execve")) {
-                        if (is_preexit) { // Entrée d'un syscall
-                                printf("%s(", syscall_names[syscall_num] );
-
-                                // format_output(regs, 1, 23, is_child);
-                                // char *arg1 = peekstr(is_child, regs.rdi);
-                                // printf("\"%s\"\n", arg1);
-                                // char **rsi = peekdoubleptr(is_child, regs.rdx);
-                                // printf("%s = ", to_string(rsi));
-                                // free_tab(rsi);
+                    for (int i = 0; syscalls[i].name != NULL; i++) {
+                        if (!strcmp(syscalls[i].name, syscall_names[syscall_num])) {
+                            int n_args = syscalls[i].arg_count;
+                            // Entrée d'un syscall
+                            if (is_preexit) {
+                                    format_output(regs, n_args, i, is_child);
+                                    if (!strncmp(syscalls[i].name, "exit", strlen("exit")))
+                                        fprintf(stdout, "?\n");
+                                }
+                            // Sortie d'un syscall
+                            else {
+                                printf("%llx\n", regs.rax);
                             }
-                        else { // Sortie d'un syscall
-                            printf(" = %llx\n", regs.rax);
                         }
                     }
                     is_preexit = !is_preexit;
