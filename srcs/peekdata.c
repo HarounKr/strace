@@ -68,7 +68,7 @@ void *peekdata(pid_t pid, unsigned long addr, size_t size) {
             return NULL;
         }
 
-        void *buf = malloc(size);
+        void *buf = calloc(1, size + 1);
         if (!buf) {
             close(fd);
             return NULL;
@@ -87,7 +87,6 @@ void *peekdata(pid_t pid, unsigned long addr, size_t size) {
             close(fd);
             return NULL;
         }
-
         close(fd);
         return buf;
     }

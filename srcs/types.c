@@ -1,39 +1,39 @@
 #include "../inc/ft_strace.h"
 
-static void int_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void int_type(char *arg_type, pid_t pid, long long int reg_addr) {
     (void) arg_type;
     (void) pid;
     fprintf(stdout, "%d", (int) reg_addr);
 }
 
-static void long_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void long_type(char *arg_type, pid_t pid, long long int reg_addr) {
     (void) arg_type;
     (void) pid;
     fprintf(stdout, "%ld", (long) reg_addr);
 }
 
-void unsigned_int_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+void unsigned_int_type(char *arg_type, pid_t pid, long long int reg_addr) {
     (void) arg_type;
     (void) pid;
     fprintf(stdout, "%u", (unsigned int) reg_addr);
 }
 
-static void unsigned_long_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void unsigned_long_type(char *arg_type, pid_t pid, long long int reg_addr) {
     (void) arg_type;
     (void) pid;
     fprintf(stdout, "%lu", (unsigned long int) reg_addr);
 }
 
-static void charptr_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void charptr_type(char *arg_type, pid_t pid, long long int reg_addr) {
     char *str = peekdata(pid, reg_addr, 256);
-        if (str) {
-            fprintf(stdout, "\"%s\"", (char *)peekdata(pid, reg_addr, 256));
-            free(str);
-        } else
-            fprintf(stdout, "%s", arg_type);
+    if (str) {
+        fprintf(stdout, "\"%s\"", str);
+        free(str);
+    } else
+        fprintf(stdout, "%s", arg_type);
 }
 
-static void chardoubleptr_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void chardoubleptr_type(char *arg_type, pid_t pid, long long int reg_addr) {
     char **doubleptr = peekdoubleptr(pid, reg_addr);
     if (doubleptr) {
         char *str = to_string(doubleptr);
@@ -44,7 +44,7 @@ static void chardoubleptr_type(char *arg_type, pid_t pid, unsigned long long int
         fprintf(stdout, "%s", arg_type);
 }
 
-static void intptr_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void intptr_type(char *arg_type, pid_t pid, long long int reg_addr) {
     int *value = peekdata(pid, reg_addr, sizeof(int));
     if (value) {
         fprintf(stdout, "%d", value[0]);
@@ -60,7 +60,7 @@ static void intptr_type(char *arg_type, pid_t pid, unsigned long long int reg_ad
 //     fprintf(stdout, "%s", arg_type);
 // }
 
-static void addr_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void addr_type(char *arg_type, pid_t pid, long long int reg_addr) {
     (void)arg_type;
     (void)pid;
     fprintf(stdout, "%p", (void *)reg_addr);

@@ -6,6 +6,8 @@ static int init_exec_struct(int ac, char **av, char **envp) {
     int len_envp = 0;
 
     executable.absolute_path = get_absolute_path(av[1]);
+    if (access(executable.absolute_path, X_OK))
+        return 1;
     executable.cmd = strdup(av[1]);
     executable.args = calloc(ac, sizeof(char *));
     if (!executable.args)

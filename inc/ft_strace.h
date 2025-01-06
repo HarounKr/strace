@@ -41,16 +41,40 @@ typedef struct s_sycall {
 
 typedef struct s_type {
     char *name;
-    void (*func)(char *, pid_t, unsigned long long int);
+    void (*func)(char *, pid_t, long long int);
 } t_type;
 
+struct user_regs_struct_32 {
+  long int ebx;
+  long int ecx;
+  long int edx;
+  long int esi;
+  long int edi;
+  long int ebp;
+  long int eax;
+  long int xds;
+  long int xes;
+  long int xfs;
+  long int xgs;
+  long int orig_eax;
+  long int eip;
+  long int xcs;
+  long int eflags;
+  long int esp;
+  long int xss;
+} ;
+
+typedef struct s_unified_regs {
+    struct user_regs_struct regs64;
+    struct user_regs_struct_32 regs32;
+} t_unified_regs;
 
 extern  t_syscall syscalls[];
 extern t_type types[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
-void    format_output(user_regs_struct regs, int n_args, int index, pid_t pid);
+void    format_output(long long int *regs_addr, int n_args, int index, pid_t pid);
 
 int     trace_exec(t_exec executable);
 size_t  tab_size(char **tab);

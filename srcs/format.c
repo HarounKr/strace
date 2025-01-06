@@ -39,7 +39,7 @@ char *to_string(char **tab) {
     return str;
 }
 
-static void format_and_print_arg(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+static void format_and_print_arg(char *arg_type, pid_t pid, long long int reg_addr) {
     for (int i = 0; types[i].name != NULL; i++) {
         if (!strcmp(arg_type, types[i].name)) {
             types[i].func(arg_type, pid, reg_addr);
@@ -47,23 +47,21 @@ static void format_and_print_arg(char *arg_type, pid_t pid, unsigned long long i
     }
 }
 
-void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
+void format_output(long long int *regs_addr, int n_args, int index, pid_t pid) {
     if (n_args == 0) {
         fprintf(stdout, "void)");
         return ;
     }
     fprintf(stdout, "%s(", syscalls[index].name);
 
-    unsigned long long int regs_addr[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};
-
     for (int i = 0; i < n_args; i++) {
-        unsigned long long int addr = regs_addr[i];
+        long long int addr = regs_addr[i];
 
         char *arg_type = syscalls[index].arg_types[i];
         
-            format_and_print_arg(arg_type, pid, addr);
-            if (i < n_args - 1)
-                fprintf(stdout, ", ");
+        format_and_print_arg(arg_type, pid, addr);
+        if (i < n_args - 1)
+            fprintf(stdout, ", ");
         
     }
     fprintf(stdout, ") =  ");
