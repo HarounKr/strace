@@ -15,6 +15,11 @@ static int init_exec_struct(int ac, char **av, char **envp) {
     while (envp[len_envp])
         len_envp++;
     executable.envp = envp;
+    executable.syscall_names = get_syscall_names();
+    if (executable.syscall_names == NULL) {
+        fprintf(stderr, "Failed to load syscall names.\n");
+        return 1;
+    }
 
     return 0;
 }

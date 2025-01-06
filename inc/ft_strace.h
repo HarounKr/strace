@@ -28,6 +28,7 @@ typedef struct s_exec {
     char *absolute_path;
     char **args;
     char **envp;
+    char **syscall_names;
     int elf_type;
 } t_exec;
 
@@ -35,6 +36,7 @@ typedef struct s_sycall {
     char *name;
     int arg_count;
     char *arg_types[6];
+    char *ret_type;
 } t_syscall;
 
 typedef struct s_type {

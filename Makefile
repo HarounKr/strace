@@ -1,6 +1,7 @@
 NAME = ft_strace
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
+SANITIZE_FLAGS = -fsanitize=address -g
 
 SRCS_DIR = srcs
 OBJS_DIR = objs
@@ -13,6 +14,10 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^
 	@echo "Compilation de $(NAME) terminée."
+
+sanitize: CFLAGS += $(SANITIZE_FLAGS)
+sanitize: re
+	@echo "Compilation avec AddressSanitizer terminée."
 
 $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c | $(OBJS_DIR)
 	@$(CC) $(CFLAGS) -c $< -o $@
@@ -31,4 +36,5 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re sanitize
+

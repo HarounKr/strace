@@ -53,11 +53,17 @@ static void intptr_type(char *arg_type, pid_t pid, unsigned long long int reg_ad
         fprintf(stdout, "%s", arg_type);
 }
 
-static void generic_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
-    (void) arg_type;
-    (void) pid;
-    (void) reg_addr;
-    fprintf(stdout, "%s", arg_type);
+// static void generic_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+//     (void) arg_type;
+//     (void) pid;
+//     (void) reg_addr;
+//     fprintf(stdout, "%s", arg_type);
+// }
+
+static void addr_type(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
+    (void)arg_type;
+    (void)pid;
+    fprintf(stdout, "%p", (void *)reg_addr);
 }
 
 t_type types[] = {
@@ -68,9 +74,9 @@ t_type types[] = {
     {"char*", charptr_type},
     {"char**", chardoubleptr_type},
     {"int*", intptr_type},
-    {"void*", generic_type},
-    {"struct", generic_type},
-    {"sigset_t", generic_type},
-    {"fd_set", generic_type},
+    {"void*", addr_type},
+    {"addr", addr_type},
+    {"sigset_t", addr_type},
+    {"fd_set", addr_type},
     {NULL, NULL},
 };

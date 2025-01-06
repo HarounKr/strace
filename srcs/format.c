@@ -42,7 +42,6 @@ char *to_string(char **tab) {
 static void format_and_print_arg(char *arg_type, pid_t pid, unsigned long long int reg_addr) {
     for (int i = 0; types[i].name != NULL; i++) {
         if (!strcmp(arg_type, types[i].name)) {
-            printf("\n");
             types[i].func(arg_type, pid, reg_addr);
         }
     }
@@ -53,12 +52,11 @@ void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
         fprintf(stdout, "void)");
         return ;
     }
-    int width = 0;
-    fprintf(stdout, "%s(\n", syscalls[index].name);
+    fprintf(stdout, "%s(", syscalls[index].name);
 
     unsigned long long int regs_addr[6] = {regs.rdi, regs.rsi, regs.rdx, regs.r10, regs.r8, regs.r9};
 
-    for (int i = 0; syscalls[index].arg_types[i]; i++) {
+    for (int i = 0; i < n_args; i++) {
         unsigned long long int addr = regs_addr[i];
 
         char *arg_type = syscalls[index].arg_types[i];
@@ -68,7 +66,5 @@ void format_output(user_regs_struct regs, int n_args, int index, pid_t pid) {
                 fprintf(stdout, ", ");
         
     }
-    if (syscalls[index].arg_count <= 1)
-        width = 30;
-    fprintf(stdout, ") =%*c", width, ' ');
+    fprintf(stdout, ") =  ");
 }

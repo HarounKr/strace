@@ -3,22 +3,23 @@
 char	*ft_substr(char const *s, unsigned int start, size_t len)
 {
 	size_t	i;
-	size_t	b;
+	size_t	s_len;
 	char	*new;
 
-	i = -1;
-	b = start;
 	if (!s)
 		return (NULL);
-	if (start > strlen(s))
+	s_len = strlen(s);
+	if (start >= s_len)
 		return (strdup(""));
-	while (s[b] && ++i < len)
-		b++;
-	new = calloc(sizeof(*new), i + 1);
+	if (len > s_len - start)
+		len = s_len - start;
+
+	new = calloc(len + 1, sizeof(*new));
 	if (!new)
 		return (NULL);
+
 	i = 0;
-	while (s[start] && i < len)
+	while (i < len && s[start])
 	{
 		new[i] = s[start];
 		i++;
@@ -128,4 +129,6 @@ void free_exec_struct(t_exec executable) {
 		free(executable.absolute_path);
 	if (executable.args)
 		free_tab(executable.args);
+	if (executable.syscall_names)
+		free_tab(executable.syscall_names);
 } 
