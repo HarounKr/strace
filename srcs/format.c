@@ -39,7 +39,7 @@ char *to_string(char **tab) {
     return str;
 }
 
-static void format_and_print_arg(char *arg_type, pid_t pid, long long int reg_addr) {
+static void format_and_print_arg(char *arg_type, pid_t pid, uint64_t reg_addr) {
     for (int i = 0; types[i].name != NULL; i++) {
         if (!strcmp(arg_type, types[i].name)) {
             types[i].func(arg_type, pid, reg_addr);
@@ -47,7 +47,7 @@ static void format_and_print_arg(char *arg_type, pid_t pid, long long int reg_ad
     }
 }
 
-void format_output(long long int *regs_addr, int n_args, int index, pid_t pid) {
+void format_output(uint64_t *regs_addr, int n_args, int index, pid_t pid) {
     if (n_args == 0) {
         fprintf(stdout, "void)");
         return ;
@@ -55,7 +55,7 @@ void format_output(long long int *regs_addr, int n_args, int index, pid_t pid) {
     fprintf(stdout, "%s(", syscalls[index].name);
 
     for (int i = 0; i < n_args; i++) {
-        long long int addr = regs_addr[i];
+        uint64_t addr = regs_addr[i];
 
         char *arg_type = syscalls[index].arg_types[i];
         

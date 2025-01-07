@@ -1,5 +1,5 @@
 NAME = ft_strace
-CC = gcc
+CC = gcc -std=gnu11
 CFLAGS = -Wall -Wextra -Werror
 SANITIZE_FLAGS = -fsanitize=address -g
 

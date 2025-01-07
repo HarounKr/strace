@@ -1,3 +1,5 @@
+#define _XOPEN_SOURCE 700
+
 #include <sys/ptrace.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +14,7 @@
 #include <sys/mman.h>
 #include <sys/user.h>
 #include <sys/uio.h>
-#include <linux/ptrace.h>
+//#include <linux/ptrace.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/user.h>
@@ -41,40 +43,42 @@ typedef struct s_sycall {
 
 typedef struct s_type {
     char *name;
-    void (*func)(char *, pid_t, long long int);
+    void (*func)(char *, pid_t, uint64_t);
 } t_type;
 
-struct user_regs_struct_32 {
-  long int ebx;
-  long int ecx;
-  long int edx;
-  long int esi;
-  long int edi;
-  long int ebp;
-  long int eax;
-  long int xds;
-  long int xes;
-  long int xfs;
-  long int xgs;
-  long int orig_eax;
-  long int eip;
-  long int xcs;
-  long int eflags;
-  long int esp;
-  long int xss;
-} ;
+#pragma pack(push, 1)
+struct i386_user_regs_struct {
+	uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t ebp;
+    uint32_t eax;
+    uint32_t ds;
+    uint32_t es;
+    uint32_t fs;
+    uint32_t gs;
+    uint32_t orig_eax;
+    uint32_t eip;
+    uint32_t cs;
+    uint32_t eflags;
+    uint32_t esp;
+    uint32_t ss;
+};
+#pragma pack(pop)
 
-typedef struct s_unified_regs {
-    struct user_regs_struct regs64;
-    struct user_regs_struct_32 regs32;
-} t_unified_regs;
+union x86_regs_union {
+    struct user_regs_struct      regs64;
+    struct i386_user_regs_struct regs32;
+} ;
 
 extern  t_syscall syscalls[];
 extern t_type types[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec executable);
-void    format_output(long long int *regs_addr, int n_args, int index, pid_t pid);
+void    format_output(uint64_t *regs_addr, int n_args, int index, pid_t pid);
 
 int     trace_exec(t_exec executable);
 size_t  tab_size(char **tab);

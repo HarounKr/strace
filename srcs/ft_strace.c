@@ -46,7 +46,9 @@ int main(int ac, char **av, char **envp) {
 
     struct stat buf;
     uint8_t *file_data;
-    
+    // printf("Size of uint64_t: %zu bytes\n", sizeof(uint64_t));
+    // printf("Size of unsigned long: %zu bytes\n", sizeof(unsigned long));
+    // printf("Size of unsigned long long: %zu bytes\n", sizeof(unsigned long long));
     if (ac < 2) {
         fprintf(stderr, "Usage : %s [executable/command] to trace\n]", av[0]);
         exit(EXIT_FAILURE);
