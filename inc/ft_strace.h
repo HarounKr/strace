@@ -77,10 +77,10 @@ extern  t_syscall syscalls[];
 extern t_type types[];
 
 void	free_tab(char **tab);
-void    free_exec_struct(t_exec executable);
+void    free_exec_struct(t_exec *executable);
 void    format_output(uint64_t *regs_addr, int n_args, int index, pid_t pid);
 
-int     trace_exec(t_exec executable);
+int     trace_exec(t_exec *executable);
 size_t  tab_size(char **tab);
 unsigned long peekptr(pid_t pid, unsigned long addr);
 

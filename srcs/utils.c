@@ -122,13 +122,13 @@ size_t tab_size(char **tab) {
 	return size;
 }
 
-void free_exec_struct(t_exec executable) {
-	if (executable.cmd)
-		free(executable.cmd);
-	if (executable.absolute_path)
-		free(executable.absolute_path);
-	if (executable.args)
-		free_tab(executable.args);
-	if (executable.syscall_names)
-		free_tab(executable.syscall_names);
+void free_exec_struct(t_exec *executable) {
+	if (executable->cmd)
+		free(executable->cmd);
+	if (executable->absolute_path)
+		free(executable->absolute_path);
+	if (executable->args)
+		free_tab(executable->args);
+	if (executable->syscall_names)
+		free_tab(executable->syscall_names);
 } 

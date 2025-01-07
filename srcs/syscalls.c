@@ -15,15 +15,16 @@ t_syscall syscalls[] = {
     {"vfork", 0, {NULL}, "int"},
     {"sync", 0, {NULL}, "void"},
     {"pause", 0, {NULL}, "int"},
-    {"gettimeofday", 0, {NULL}, "int"},
-    {"time", 0, {NULL}, "long"},
-    {"uname", 0, {NULL}, "int"},
-    {"sched_getscheduler", 0, {NULL}, "int"},
-    {"getpgrp", 0, {NULL}, "int"},
     {"gettid", 0, {NULL}, "int"},
-    {"epoll_create", 0, {NULL}, "int"},
-    {"timerfd_create", 0, {NULL}, "int"},
-    {"getcpu", 0, {NULL}, "int"},
+    {"times", 0, {NULL}, "long"},
+    {"iopl", 0, {NULL}, "int"},
+    {"vhangup", 0, {NULL}, "int"},
+    {"mlockall", 0, {NULL}, "int"},
+    {"munlockall", 0, {NULL}, "int"},
+    {"sysinfo", 0, {NULL}, "int"},
+    {"sched_get_priority_max", 0, {NULL}, "int"},
+    {"sched_get_priority_min", 0, {NULL}, "int"},
+    {"rt_sigreturn", 0, {NULL}, "int"},
     // 1 arg
     {"exit", 1, {"int"}, "void"},
     {"exit_group", 1, {"int"}, "void"},
@@ -125,6 +126,7 @@ t_syscall syscalls[] = {
     {"fadvise64", 6, {"int", "unsigned long", "unsigned long", "unsigned int"}, "int"},
     {NULL, 0, {NULL}, NULL}
 };
+
 
 static bool is_valid_line(const char *line) {
     if (strlen(line) <= 1 || line == NULL)

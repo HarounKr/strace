@@ -55,7 +55,7 @@ int main(int ac, char **av, char **envp) {
     }
     if (init_exec_struct(ac, av, envp)) {
         perror("ft_strace: ");
-        free_exec_struct(executable);
+        free_exec_struct(&executable);
         exit(EXIT_FAILURE);
     } 
     int fd = open(executable.absolute_path, O_RDONLY, S_IRUSR);
@@ -81,14 +81,14 @@ int main(int ac, char **av, char **envp) {
     if (define_elf_type(file_data)) {
         fprintf(stderr, "ft_strace: file format not recognized\n ");
         munmap(file_data, buf.st_size);
-        free_exec_struct(executable);
+        free_exec_struct(&executable);
         close(fd);
         exit(EXIT_FAILURE);
     } 
     munmap(file_data, buf.st_size);
     close(fd);
-    trace_exec(executable);
-    free_exec_struct(executable);
+    trace_exec(&executable);
+    free_exec_struct(&executable);
     return 0;
 }
 
