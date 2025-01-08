@@ -48,7 +48,7 @@ void sigset_blocked() {
 }
 
 void child_proc(t_exec *exec) {
-    
+    raise(SIGSTOP);
     if (execve(exec->absolute_path, exec->args, exec->envp) < 0) {
         perror("execve");
         exit(EXIT_FAILURE);
@@ -58,7 +58,7 @@ void child_proc(t_exec *exec) {
 
 int ptrace_init(pid_t pid) {
     int status;
-    kill(pid, SIGSTOP);
+
     if (ptrace(PTRACE_SEIZE, pid, NULL, NULL) == -1) {
             perror("ptrace seize");
             return -1;
