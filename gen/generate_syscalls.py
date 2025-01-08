@@ -32,6 +32,7 @@ TYPE_MAPPING = {
     "cap_user_header_t": "addr",
     "cpu_set_t": "int",
     "aio_context_t": "unsigned int",
+    "struct": "addr"
 }
 
 def replace_types(arg_type):
@@ -39,16 +40,13 @@ def replace_types(arg_type):
     replaced_tokens = []
     for token in tokens:
         # Enlever les pointeurs pour mapper correctement
-        base_token = token.replace('*', '').replace('const', '').strip()
+        base_token = token.replace('*', '').strip()
         if base_token in TYPE_MAPPING:
             # Remplacer le typedef
             replacement = TYPE_MAPPING[base_token]
             # Réattacher les pointeurs
-            pointer_part = token[len(base_token):]
-            replaced_tokens.append(replacement + pointer_part)
-        elif base_token.startswith("struct"):
-            # Remplacer les structs par addr
-            replaced_tokens.append("addr" + token[len("struct"):])
+            #pointer_part = token[len(base_token):]
+            replaced_tokens.append(replacement)
         else:
             replaced_tokens.append(token)
     return " ".join(replaced_tokens)
@@ -88,7 +86,6 @@ def extract_synopsis(man_page_text):
     return man_page_text  # fallback: si pas trouvé, on renvoie tout.
 
 def parse_prototype_from_man(man_page, syscall_name):
-    """Extrait le prototype, les arguments, et le type de retour depuis le SYNOPSIS."""
     synopsis = extract_synopsis(man_page)
     if not synopsis:
         return None, None, None
@@ -101,6 +98,7 @@ def parse_prototype_from_man(man_page, syscall_name):
 
     return_type_raw = match.group(1).strip()
     args_raw = match.group(2).strip()
+    args_raw = args_raw.replace('const', '')
 
     # Nettoyer le type de retour : enlever les double-espaces etc..
     return_type = re.sub(r'\s+', ' ', return_type_raw).strip()
@@ -150,23 +148,26 @@ def generate_syscalls(header_path, output_file):
         man_page = fetch_man_syscall(syscall)
         if not man_page:
             print(f"  Pas de page man trouvée pour {syscall}")
-            
             continue
 
         return_type, num_args, arg_types = parse_prototype_from_man(man_page, syscall)
         if not return_type or num_args is None or arg_types is None:
             print(f"  Impossible d'extraire les détails pour {syscall}")
+            not_found.append(syscall)
             continue
 
         formatted_syscalls.append(
             format_syscall(syscall, return_type, num_args, arg_types)
         )
-
-    # Sauvegarde dans le fichier
     with open(output_file, "w") as f:
         f.write("t_syscall syscalls[] = {\n")
         f.write("\n".join(formatted_syscalls))
         f.write("\n    {NULL, 0, {NULL}, NULL}\n};\n")
+
+    # Pour faire la recherche manuellement
+    with open("not_found", "a") as f:
+        f.write(f"Syscalls not found for {output_file} : {not_found} \n")
+
     print(f"Syscalls sauvegardés dans {output_file}")
 
 def main():

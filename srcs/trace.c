@@ -4,7 +4,6 @@
 // https://man7.org/linux/man-pages/man2/ptrace.2.html
 // https://man7.org/linux/man-pages/man2/process_vm_readv.2.html
 
-
 static uint64_t *get_regs_addr(union x86_regs_union *reg_t, bool is_64) {
     uint64_t *regs_addr = calloc(sizeof(long long int), 6);
     if (!regs_addr) {
@@ -48,9 +47,9 @@ void sigset_blocked() {
     sigprocmask(SIG_BLOCK, &blocked, NULL);
 }
 
-void child_proc(t_exec *executable) {
-    raise(SIGSTOP);
-    if (execve(executable->absolute_path, executable->args, executable->envp) == -1) {
+void child_proc(t_exec *exec) {
+    
+    if (execve(exec->absolute_path, exec->args, exec->envp) < 0) {
         perror("execve");
         exit(EXIT_FAILURE);
     }
@@ -59,7 +58,7 @@ void child_proc(t_exec *executable) {
 
 int ptrace_init(pid_t pid) {
     int status;
-
+    kill(pid, SIGSTOP);
     if (ptrace(PTRACE_SEIZE, pid, NULL, NULL) == -1) {
             perror("ptrace seize");
             return -1;
@@ -81,19 +80,20 @@ int ptrace_init(pid_t pid) {
     return 0;
 }
 
-int syscall_matches(t_exec *executable, unsigned long syscall_num) {
-    int total_syscalls = tab_size(executable->syscall_names);
+int syscall_matches(t_exec *exec, unsigned long syscall_num) {
+    int total_syscalls = tab_size(exec->syscall_names);
     
     if ((int) syscall_num < total_syscalls) {
         for (int i = 0; syscalls[i].name != NULL; i++) {
-            if (!strcmp(syscalls[i].name, executable->syscall_names[syscall_num]))
+            if (!strcmp(syscalls[i].name, exec->syscall_names[syscall_num]))
                 return i;
         }
     }
     return -1;
 }
 
-int is_syscall(pid_t pid, t_exec *executable, union x86_regs_union *regs_t, struct iovec *io, bool *is_preexit) {
+
+int is_syscall(pid_t pid, t_exec *exec, union x86_regs_union *regs_t, struct iovec *io, bool *is_preexit) {
     memset(regs_t, 0, sizeof(*regs_t));
     io->iov_base = regs_t;
     io->iov_len = sizeof(*regs_t);
@@ -110,44 +110,34 @@ int is_syscall(pid_t pid, t_exec *executable, union x86_regs_union *regs_t, stru
     } else if (io->iov_len == sizeof(struct i386_user_regs_struct)) {
         is_64 = false;
     } else {
-        fprintf(stderr, "Erreur: iov_len=%zu (inconnu, ni 32 ni 64)\n", io->iov_len);
+        fprintf(stderr, "exec type none recognized\n");
         return -1;
     }
 
     unsigned long syscall_num = is_64 ? regs_t->regs64.orig_rax : regs_t->regs32.orig_eax;
 
-    int index = syscall_matches(executable, syscall_num);
+    int index = syscall_matches(exec, syscall_num);
     if (index >= 0) {
         int n_args = syscalls[index].arg_count;
         if (*is_preexit) {
             uint64_t *regs_addr = get_regs_addr(regs_t, is_64);
-            if (!regs_addr) return -1;  // Vérification de l'allocation mémoire
-
-            format_output(regs_addr, n_args, index, pid);
+            if (!regs_addr)
+                return -1;
+            print_args(regs_addr, n_args, index, pid);
             if (!strncmp(syscalls[index].name, "exit", strlen("exit"))) {
                 fprintf(stdout, "?\n");
             }
             free(regs_addr);
         } else {
             uint64_t ret_value = is_64 ? regs_t->regs64.rax : regs_t->regs32.eax;
-            if (!strcmp(syscalls[index].ret_type, "int")) {
-                fprintf(stdout, "%d\n", (int)ret_value);
-            } else if (!strcmp(syscalls[index].ret_type, "unsigned int")) {
-                fprintf(stdout, "%u\n", (unsigned int)ret_value);
-            } else if (!strcmp(syscalls[index].ret_type, "void*")) {
-                fprintf(stdout, "%p\n", (void *)ret_value);
-            } else if (!strcmp(syscalls[index].ret_type, "long")) {
-                fprintf(stdout, "%ld\n", (long)ret_value);
-            } else {
-                fprintf(stdout, "%lu\n", ret_value);
-            }
+            print_ret_value(ret_value, index);
         }
         *is_preexit = !(*is_preexit);
     }
     return 0;
 }
 
-int trace_exec(t_exec *executable) {
+int trace_exec(t_exec *exec) {
     int status;
     int exit_code = 0;
     bool is_alive = true;
@@ -156,16 +146,15 @@ int trace_exec(t_exec *executable) {
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
-        return 1;
+        return -1;
     }
     if (pid == 0) {
-        child_proc(executable);
+        child_proc(exec);
     } else {
         union x86_regs_union regs_t;
         struct iovec io;
-
         if (ptrace_init(pid) == -1) {
-            return 1;
+            return -1;
         }
         while (is_alive) {
             sigset_empty();
@@ -180,14 +169,13 @@ int trace_exec(t_exec *executable) {
                 int sig_num = WTERMSIG(status);
                 printf("Le fils s'est terminé avec le signal : %d\n", sig_num);
                 is_alive = false;
-            } else if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP | 0x80)) {
-                if (is_syscall(pid, executable, &regs_t, &io, &is_preexit) == -1) {
-                    fprintf(stderr, "Erreur lors du traitement d'un syscall\n");
-                    return 1;
+            } else if (WIFSTOPPED(status)) {
+                if (WSTOPSIG(status) == (SIGTRAP | 0x80)) {
+                    if (is_syscall(pid, exec, &regs_t, &io, &is_preexit) == -1) {
+                        fprintf(stderr, "ft_strace: Erreur lors du traitement d'un syscall\n");
+                        return -1;
+                    }
                 }
-            } else {
-                fprintf(stderr, "Arrêt inattendu : signal=%d\n", WSTOPSIG(status));
-                return 1;
             }
             if (is_alive) {
                 ptrace(PTRACE_SYSCALL, pid, NULL, NULL);

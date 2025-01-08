@@ -1,3 +1,4 @@
+#pragma once
 #define _XOPEN_SOURCE 700
 
 #include <sys/ptrace.h>
@@ -14,6 +15,7 @@
 #include <sys/mman.h>
 #include <sys/user.h>
 #include <sys/uio.h>
+#include <asm-generic/unistd.h>
 //#include <linux/ptrace.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -22,7 +24,6 @@
 
 #define PATH_MAX 4096
 
-typedef struct user_regs_struct user_regs_struct;
 typedef struct iovec iovec;
 
 typedef struct s_exec {
@@ -46,7 +47,6 @@ typedef struct s_type {
     void (*func)(char *, pid_t, uint64_t);
 } t_type;
 
-#pragma pack(push, 1)
 struct i386_user_regs_struct {
 	uint32_t ebx;
     uint32_t ecx;
@@ -66,7 +66,6 @@ struct i386_user_regs_struct {
     uint32_t esp;
     uint32_t ss;
 };
-#pragma pack(pop)
 
 union x86_regs_union {
     struct user_regs_struct      regs64;
@@ -77,10 +76,11 @@ extern  t_syscall syscalls[];
 extern t_type types[];
 
 void	free_tab(char **tab);
-void    free_exec_struct(t_exec *executable);
-void    format_output(uint64_t *regs_addr, int n_args, int index, pid_t pid);
+void    free_exec_struct(t_exec *exec);
+void    print_args(uint64_t *regs_addr, int n_args, int index, pid_t pid);
+void    print_ret_value(uint64_t ret_value, int index);
 
-int     trace_exec(t_exec *executable);
+int     trace_exec(t_exec *exec);
 size_t  tab_size(char **tab);
 unsigned long peekptr(pid_t pid, unsigned long addr);
 

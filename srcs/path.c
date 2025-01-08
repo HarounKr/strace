@@ -19,17 +19,8 @@ char *get_absolute_path(const char *cmd) {
         }
         free_tab(split_path);
     }
-    if (!path_found) {
-        absolute_path = calloc(PATH_MAX, sizeof(char ));
-        if (!absolute_path) {
-            perror("calloc");
-            exit(EXIT_FAILURE);
-        }
-        if (!realpath(cmd, absolute_path)) {
-            perror("ft_strace");
-            free(absolute_path);
-            exit(EXIT_FAILURE);
-        }
-    }
+    if (!path_found)
+        absolute_path = ft_split(cmd, ' ')[0];
+        
     return absolute_path;
 }

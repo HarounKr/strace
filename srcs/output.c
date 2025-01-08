@@ -1,5 +1,19 @@
 #include "../inc/ft_strace.h"
 
+void print_ret_value(uint64_t ret_value, int index) {
+    if (!strcmp(syscalls[index].ret_type, "int")) {
+        fprintf(stdout, "%d\n", (int)ret_value);
+    } else if (!strcmp(syscalls[index].ret_type, "unsigned int")) {
+        fprintf(stdout, "%u\n", (unsigned int)ret_value);
+    } else if (!strcmp(syscalls[index].ret_type, "void*")) {
+        fprintf(stdout, "%p\n", (void *)ret_value);
+    } else if (!strcmp(syscalls[index].ret_type, "long")) {
+        fprintf(stdout, "%ld\n", (long)ret_value);
+    } else {
+        fprintf(stdout, "%lu\n", ret_value);
+    }
+}
+
 char *to_string(char **tab) {
     if (tab == NULL)
         return strdup("[]");
@@ -47,7 +61,7 @@ static void format_and_print_arg(char *arg_type, pid_t pid, uint64_t reg_addr) {
     }
 }
 
-void format_output(uint64_t *regs_addr, int n_args, int index, pid_t pid) {
+void print_args(uint64_t *regs_addr, int n_args, int index, pid_t pid) {
     if (n_args == 0) {
         fprintf(stdout, "void)");
         return ;
