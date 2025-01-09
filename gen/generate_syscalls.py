@@ -37,29 +37,27 @@ TYPE_MAPPING = {
 
 def replace_types(arg_type):
     tokens = arg_type.split()
+    print(tokens)
     replaced_tokens = []
     for token in tokens:
-        # Enlever les pointeurs pour mapper correctement
         base_token = token.replace('*', '').strip()
         if base_token in TYPE_MAPPING:
-            # Remplacer le typedef
             replacement = TYPE_MAPPING[base_token]
-            # Réattacher les pointeurs
-            #pointer_part = token[len(base_token):]
             replaced_tokens.append(replacement)
         else:
             replaced_tokens.append(token)
     return " ".join(replaced_tokens)
 
 def parse_syscalls_from_header(header_path):
-    """Parse le fichier `unistd_*.h` pour extraire les noms des syscalls."""
+    """Parse le fichier `unistd_*.h` pour extraire les numéros et noms des syscalls."""
     syscalls = []
     with open(header_path, "r") as f:
         for line in f:
-            # Identifier les définitions de syscalls
-            match = re.match(r"#define\s+__NR_(\w+)\s+\d+", line)
+            match = re.match(r"#define\s+__NR_(\w+)\s+(\d+)", line)
             if match:
-                syscalls.append(match.group(1))  # Extraire le nom du syscall
+                name = match.group(1)
+                number = int(match.group(2))
+                syscalls.append((number, name))
     return syscalls
 
 def fetch_man_syscall(syscall):
@@ -79,18 +77,16 @@ def fetch_man_syscall(syscall):
     return None
 
 def extract_synopsis(man_page_text):
-    # Cherche un bloc commençant après SYNOPSIS et s'arrêtant avant la prochaine section en MAJ
     match = re.search(r'(?s)(?<=SYNOPSIS\n)(.*?)(?=\n[A-Z ]+\n)', man_page_text)
     if match:
         return match.group(1)
-    return man_page_text  # fallback: si pas trouvé, on renvoie tout.
+    return None
 
 def parse_prototype_from_man(man_page, syscall_name):
     synopsis = extract_synopsis(man_page)
     if not synopsis:
         return None, None, None
 
-    # Expression régulière plus flexible, multi-lignes
     pattern = rf'(?s)\b((?:[a-zA-Z_][\w\s\*\d]*))\b{syscall_name}\s*\(([^)]*)\)'
     match = re.search(pattern, synopsis)
     if not match:
@@ -100,78 +96,74 @@ def parse_prototype_from_man(man_page, syscall_name):
     args_raw = match.group(2).strip()
     args_raw = args_raw.replace('const', '')
 
-    # Nettoyer le type de retour : enlever les double-espaces etc..
     return_type = re.sub(r'\s+', ' ', return_type_raw).strip()
     return_type = replace_types(return_type)
 
-    # Traiter les arguments
     if not args_raw or args_raw.lower() == 'void':
         arg_list = []
     else:
-        # Séparer par virgules
         arg_list = [arg.strip() for arg in args_raw.split(',')]
 
-    # Extraire uniquement le type des arguments
     arg_types = []
     for arg in arg_list:
         parts = arg.split()
         if len(parts) >= 2:
             arg_type_raw = " ".join(parts[:-1])
         else:
-            arg_type_raw = parts[0]  # Cas où seul le type est présent
+            arg_type_raw = parts[0]
         arg_type = replace_types(arg_type_raw)
         arg_types.append(arg_type)
 
     return return_type, len(arg_types), arg_types
 
-def format_syscall(syscall_name, return_type, num_args, arg_types):
-    #Formate les informations dans la structure `t_syscall`.
+def format_syscall(number, syscall_name, return_type, num_args, arg_types, not_found=False):
+    """Formate les informations dans la structure {number, {"name", args_count, {"args"}, "return_type"}}."""
     if arg_types:
         args_list = ", ".join([f'"{arg}"' for arg in arg_types])
     else:
         args_list = "NULL"
-    if return_type:
-        return_type_str = f'"{return_type}"'
-    else:
-        return_type_str = "NULL"
-    return f'    {{"{syscall_name}", {num_args}, {{{args_list}}}, {return_type_str}}},'
+    return_type_str = f'"{return_type}"' if return_type else "NULL"
+    syscall_entry = f'    {{{number}, {{"{syscall_name}", {num_args}, {{{args_list}}}, {return_type_str}}}}}'
+    if not_found:
+        syscall_entry += " /* syscall pas trouvé */"
+    return syscall_entry
 
 def generate_syscalls(header_path, output_file):
-    #Génère le fichier de syscalls à partir du header spécifié.
     print(f"Lecture des syscalls depuis {header_path}...")
     syscalls = parse_syscalls_from_header(header_path)
     print(f"{len(syscalls)} syscalls trouvés dans {header_path}.")
-    not_found = []
     formatted_syscalls = []
-    for syscall in syscalls:
-        print(f"Traitement du syscall: {syscall}...")
+
+    for number, syscall in syscalls:
+        print(f"Traitement du syscall: {syscall} (numéro {number})...")
         man_page = fetch_man_syscall(syscall)
         if not man_page:
             print(f"  Pas de page man trouvée pour {syscall}")
+            formatted_syscalls.append(
+                format_syscall(number, syscall, "int", 0, [], not_found=True)  # Valeurs par défaut avec commentaire
+            )
             continue
 
         return_type, num_args, arg_types = parse_prototype_from_man(man_page, syscall)
         if not return_type or num_args is None or arg_types is None:
             print(f"  Impossible d'extraire les détails pour {syscall}")
-            not_found.append(syscall)
+            formatted_syscalls.append(
+                format_syscall(number, syscall, "int", 0, [], not_found=True)  # Valeurs par défaut avec commentaire
+            )
             continue
 
         formatted_syscalls.append(
-            format_syscall(syscall, return_type, num_args, arg_types)
+            format_syscall(number, syscall, return_type, num_args, arg_types)
         )
-    with open(output_file, "w") as f:
-        f.write("t_syscall syscalls[] = {\n")
-        f.write("\n".join(formatted_syscalls))
-        f.write("\n    {NULL, 0, {NULL}, NULL}\n};\n")
 
-    # Pour faire la recherche manuellement
-    with open("not_found", "a") as f:
-        f.write(f"Syscalls not found for {output_file} : {not_found} \n")
+    # with open(output_file, "w") as f:
+    #     f.write("t_syscall syscalls[] = {\n")
+    #     f.write(",\n".join(formatted_syscalls))
+    #     f.write("\n    {0, {NULL, 0, {NULL}, NULL}}\n};\n")
 
-    print(f"Syscalls sauvegardés dans {output_file}")
+    # print(f"Syscalls sauvegardés dans {output_file}")
 
 def main():
-    # Définitions des headers et fichiers de sortie
     headers = {
         "64": "/usr/include/x86_64-linux-gnu/asm/unistd_64.h",
         "32": "/usr/include/x86_64-linux-gnu/asm/unistd_32.h"
