@@ -25,7 +25,7 @@ static void unsigned_long_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
 }
 
 static void charptr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
-    char *str = peekdata(pid, reg_addr, 256);
+    char *str = peekdata(pid, reg_addr, 4096, sizeof(char));
     if (str) {
         fprintf(stdout, "\"%s\"", str);
         free(str);
@@ -45,20 +45,13 @@ static void chardoubleptr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
 }
 
 static void intptr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
-    int *value = peekdata(pid, reg_addr, sizeof(int));
+    int *value = peekdata(pid, reg_addr, 4096, sizeof(int));
     if (value) {
         fprintf(stdout, "%d", value[0]);
         free(value);
     } else
         fprintf(stdout, "%s", arg_type);
 }
-
-// static void generic_type(char *arg_type, pid_t pid, unsigned uint64_t reg_addr) {
-//     (void) arg_type;
-//     (void) pid;
-//     (void) reg_addr;
-//     fprintf(stdout, "%s", arg_type);
-// }
 
 static void addr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
     (void)arg_type;
@@ -71,10 +64,10 @@ t_type types[] = {
     {"long", long_type},
     {"unsigned int", unsigned_int_type},
     {"unsigned long", unsigned_long_type},
-    {"char*", charptr_type},
-    {"char**", chardoubleptr_type},
-    {"int*", intptr_type},
-    {"void*", addr_type},
+    {"char *", charptr_type},
+    {"char **", chardoubleptr_type},
+    {"int *", intptr_type},
+    {"void *", addr_type},
     {"addr", addr_type},
     {"sigset_t", addr_type},
     {"fd_set", addr_type},

@@ -1,6 +1,6 @@
 #include "../inc/ft_strace.h"
 
-bool is_addr_mapped(pid_t pid, unsigned long addr) {
+static bool is_addr_mapped(pid_t pid, unsigned long addr) {
     char maps_path[64];
     snprintf(maps_path, sizeof(maps_path), "/proc/%d/maps", pid);
 
@@ -56,7 +56,7 @@ unsigned long peekptr(pid_t pid, unsigned long addr) {
     return -1;
 }
 
-void *peekdata(pid_t pid, unsigned long addr, size_t size) {
+void *peekdata(pid_t pid, unsigned long addr, size_t size, size_t sizeof_type) {
 
     if (is_addr_mapped(pid, addr)) {
         char mem_path[64];
@@ -68,7 +68,7 @@ void *peekdata(pid_t pid, unsigned long addr, size_t size) {
             return NULL;
         }
 
-        void *buf = calloc(1, size + 1);
+        void *buf = calloc(size, sizeof_type);
         if (!buf) {
             close(fd);
             return NULL;
@@ -92,7 +92,6 @@ void *peekdata(pid_t pid, unsigned long addr, size_t size) {
     }
     return NULL;
 }
-
 
 char **peekdoubleptr(pid_t pid, unsigned long addr) {
 
@@ -119,7 +118,7 @@ char **peekdoubleptr(pid_t pid, unsigned long addr) {
             unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
             if (ptr_value == 0 || (long) ptr_value == -1)
                 break;
-            char *str = peekdata(pid, ptr_value, 256);
+            char *str = peekdata(pid, ptr_value, 4096, sizeof(char));
             if (str == NULL) {
                 free(str);
                 break ;

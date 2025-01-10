@@ -542,3 +542,208 @@ int prlimit64(pid_t pid, int resource, const struct rlimit *new_limit,
 #define __NR_landlock_restrict_self 446
 #define __NR_memfd_secret 447
 #define __NR_process_mrelease 448
+
+
+chmod(const char *pathname, mode_t mode)
+fchmod(int fd, mode_t mode)
+fchmodat(int dirfd, const char *pathname, mode_t mode, int flags)
+chown(const char *pathname, uid_t owner, gid_t group)
+fchown(int fd, uid_t owner, gid_t group)
+lchown(const char *pathname, uid_t owner, gid_t group)
+fchownat(int dirfd, const char *pathname, uid_t owner, gid_t group, int flags)
+mkdir(const char *pathname, mode_t mode)
+mkdirat(int dirfd, const char *pathname, mode_t mode)
+rmdir(const char *pathname)
+chdir(const char *path)
+fchdir(int fd)
+getcwd(char *buf, size_t size)
+statx(int dirfd, const char *pathname, int flags, unsigned int mask, struct statx *statxbuf)
+
+
+clone(int (*fn)(void *), void *child_stack, int flags, void *arg, ...)
+<small>Ici on a souvent un pointeur de fonction + un pointeur de stack + d’autres pointeurs potentiels.</small>
+execve(const char *filename, char *const argv[], char *const envp[])
+execveat(int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags)
+wait4(pid_t pid, int *status, int options, struct rusage *rusage)
+waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options)
+_exit(int status)
+<small>(pas de pointeur en paramètre)</small>
+exit_group(int status)
+<small>(pas de pointeur en paramètre)</small>
+getpid(void)
+<small>(pas de pointeur en paramètre)</small>
+getppid(void)
+<small>(pas de pointeur)</small>
+gettid(void)
+<small>(pas de pointeur)</small>
+getuid(void)
+<small>(pas de pointeur)</small>
+getgid(void)
+<small>(pas de pointeur)</small>
+geteuid(void), getegid(void), etc.
+<small>(pas de pointeur)</small>
+setuid(uid_t uid), setgid(gid_t gid), etc.
+<small>(pas de pointeur en paramètre direct)</small>
+setgroups(size_t size, const gid_t *list)
+getgroups(int size, gid_t *list)
+setresuid(uid_t ruid, uid_t euid, uid_t suid)
+<small>(pas de pointeur direct, hormis si le wrapper libc le fait différemment)</small>
+prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
+<small>Souvent on passe des pointeurs en arg2..arg5 selon l’option.</small>
+kill(pid_t pid, int sig)
+<small>(pas de pointeur)</small>
+tkill(int tid, int sig)
+<small>(pas de pointeur)</small>
+tgkill(int tgid, int tid, int sig)
+<small>(pas de pointeur)</small>
+sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+sigpending(sigset_t *set)
+rt_sigqueueinfo(pid_t tgid, int sig, siginfo_t *uinfo)
+rt_sigtimedwait(const sigset_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize)
+setitimer(int which, const struct itimerval *new_value, struct itimerval *old_value)
+getitimer(int which, struct itimerval *curr_value)
+timer_create(clockid_t clockid, struct sigevent *sevp, timer_t *timerid)
+timer_settime(timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value)
+timer_gettime(timer_t timerid, struct itimerspec *curr_value)
+2.3. Mémoire, mmap et dérivés
+mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
+munmap(void *addr, size_t length)
+mprotect(void *addr, size_t len, int prot)
+msync(void *addr, size_t length, int flags)
+mlock(const void *addr, size_t len)
+munlock(const void *addr, size_t len)
+mlockall(int flags)
+<small>(pas de pointeur en param)</small>
+munlockall(void)
+<small>(pas de pointeur en param)</small>
+madvise(void *addr, size_t length, int advice)
+brk(void *addr)
+<small>Selon la libc : parfois prototypé en int brk(void *end_data_segment). Retourne un int / ou modifie l’alloc interne.</small>
+sbrk(intptr_t increment)
+<small>(libc standard, pas un syscall direct sur x86_64, mais appelle brk() interne.)</small>
+remap_file_pages(void *addr, size_t size, int prot, size_t pgoff, int flags)
+<small>Obsolète sur x86_64.</small>
+mremap(void *old_address, size_t old_size, size_t new_size, int flags, ... /* void *new_address */)
+process_vm_readv(pid_t pid, const struct iovec *lvec, unsigned long liovcnt, const struct iovec *rvec, unsigned long riovcnt, unsigned long flags)
+process_vm_writev(pid_t pid, const struct iovec *lvec, unsigned long liovcnt, const struct iovec *rvec, unsigned long riovcnt, unsigned long flags)
+move_pages(int pid, unsigned long count, void **pages, const int *nodes, int *status, int flags)
+2.4. Réseau, sockets
+socket(int domain, int type, int protocol)
+bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+listen(int sockfd, int backlog)
+<small>(pas de pointeur sauf sockfd comme int)</small>
+accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+send(int sockfd, const void *buf, size_t len, int flags)
+sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+sendmsg(int sockfd, const struct msghdr *msg, int flags)
+recv(int sockfd, void *buf, size_t len, int flags)
+recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen)
+recvmsg(int sockfd, struct msghdr *msg, int flags)
+getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen)
+setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
+shutdown(int sockfd, int how)
+<small>(pas de pointeur)</small>
+socketpair(int domain, int type, int protocol, int sv[2])
+<small>tableau d’int => int *.</small>
+
+
+pipe(int pipefd[2])
+pipe2(int pipefd[2], int flags)
+eventfd(unsigned int initval, int flags)
+<small>(pas de pointeur en paramètre, hormis parfois un unsigned int * en user space, selon le wrapper.)</small>
+signalfd(int fd, const sigset_t *mask, int flags)
+timerfd_create(int clockid, int flags)
+timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value)
+timerfd_gettime(int fd, struct itimerspec *curr_value)
+epoll_create(int size)
+<small>(obsolète, remplacé par epoll_create1)</small>
+epoll_create1(int flags)
+<small>(pas de pointeur en paramètre direct.)</small>
+epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
+epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
+epoll_pwait(int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask)
+inotify_init(void)
+<small>(pas de pointeur)</small>
+inotify_init1(int flags)
+<small>(pas de pointeur)</small>
+inotify_add_watch(int fd, const char *pathname, uint32_t mask)
+inotify_rm_watch(int fd, int wd)
+<small>(pas de pointeur)</small>
+SysV IPC
+msgget(key_t key, int msgflg)
+<small>(pas de pointeur direct)</small>
+msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg)
+msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg)
+shmget(key_t key, size_t size, int shmflg)
+<small>(pas de pointeur direct)</small>
+shmat(int shmid, const void *shmaddr, int shmflg)
+<small>Retourne un void *, param shmaddr si on veut imposer l’adresse.</small>
+shmdt(const void *shmaddr)
+semget(key_t key, int nsems, int semflg)
+<small>(pas de pointeur direct)</small>
+semop(int semid, struct sembuf *sops, size_t nsops)
+semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout)
+semctl(int semid, int semnum, int cmd, union semun arg)
+<small>(paramètre union qui peut contenir un pointeur selon la commande)</small>
+2.6. Autres catégories
+Temps et date
+
+time_t time(time_t *tloc)
+gettimeofday(struct timeval *tv, struct timezone *tz)
+settimeofday(const struct timeval *tv, const struct timezone *tz)
+clock_gettime(clockid_t clk_id, struct timespec *tp)
+clock_settime(clockid_t clk_id, const struct timespec *tp)
+clock_getres(clockid_t clk_id, struct timespec *res)
+Quota, ressources
+
+getrlimit(int resource, struct rlimit *rlim)
+setrlimit(int resource, const struct rlimit *rlim)
+prlimit64(pid_t pid, int resource, const struct rlimit64 *new_limit, struct rlimit64 *old_limit)
+getrusage(int who, struct rusage *usage)
+Nommage/Infos système
+
+uname(struct utsname *buf)
+gethostname(char *name, size_t len)
+sethostname(const char *name, size_t len)
+setdomainname(const char *name, size_t len)
+User, groups, capabilities
+
+setgroups(size_t size, const gid_t *list)
+getgroups(int size, gid_t *list)
+capget(cap_user_header_t header, cap_user_data_t data)
+capset(cap_user_header_t header, const cap_user_data_t data)
+Divers
+
+ioctl(int fd, unsigned long request, ...)
+<small>Souvent le 3ᵉ param est un pointeur selon l’ioctl.</small>
+fcntl(int fd, int cmd, ...)
+<small>Là aussi, selon cmd, on peut passer un pointeur.</small>
+readahead(int fd, off64_t offset, size_t count)
+getxattr(const char *path, const char *name, void *value, size_t size)
+lgetxattr(const char *path, const char *name, void *value, size_t size)
+fgetxattr(int fd, const char *name, void *value, size_t size)
+listxattr(const char *path, char *list, size_t size)
+llistxattr(const char *path, char *list, size_t size)
+flistxattr(int fd, char *list, size_t size)
+sched_setscheduler(pid_t pid, int policy, const struct sched_param *param)
+sched_getscheduler(pid_t pid)
+sched_setparam(pid_t pid, const struct sched_param *param)
+sched_getparam(pid_t pid, struct sched_param *param)
+sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *mask)
+sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *mask)
+sysinfo(struct sysinfo *info)
+reboot(int magic, int magic2, int cmd, void *arg)
+kexec_load(unsigned long entry, unsigned long nr_segments, struct kexec_segment *segments, unsigned long flags)
+semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout)
+<small>(déjà mentionné en SysV IPC)</small>
+get_mempolicy(int *mode, unsigned long *nodemask, unsigned long maxnode, void *addr, int flags)
+set_mempolicy(int mode, const unsigned long *nodemask, unsigned long maxnode)
+mbind(void *addr, unsigned long len, int mode, const unsigned long *nodemask, unsigned long maxnode, unsigned flags)
+getcpu(unsigned *cpu, unsigned *node, void *tcache)
+<small>Non standard, dépend des versions de glibc/noyau.</small>
+perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned long flags)

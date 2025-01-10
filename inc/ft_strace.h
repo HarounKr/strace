@@ -31,11 +31,12 @@ typedef struct s_exec {
     char *absolute_path;
     char **args;
     char **envp;
-    char **syscall_names;
+    //char **syscall_names;
     int elf_type;
 } t_exec;
 
 typedef struct s_sycall {
+    int num;
     char *name;
     int arg_count;
     char *arg_types[6];
@@ -70,15 +71,16 @@ struct i386_user_regs_struct {
 union x86_regs_union {
     struct user_regs_struct      regs64;
     struct i386_user_regs_struct regs32;
-} ;
+};
 
-extern  t_syscall syscalls[];
+extern  t_syscall syscalls32[];
+extern  t_syscall syscalls64[];
 extern t_type types[];
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec *exec);
-void    print_args(uint64_t *regs_addr, int n_args, int index, pid_t pid);
-void    print_ret_value(uint64_t ret_value, int index);
+void    print_args(uint64_t *regs_addr, int n_args, t_syscall *syscall, pid_t pid);
+void    print_ret_value(uint64_t ret_value, char *ret_type);
 
 int     trace_exec(t_exec *exec);
 size_t  tab_size(char **tab);
@@ -87,8 +89,8 @@ unsigned long peekptr(pid_t pid, unsigned long addr);
 char    *get_absolute_path(const char *cmd);
 char	*ft_substr(char const *s, unsigned int start, size_t len);
 char    *to_string(char **tab);
-void    *peekdata(pid_t pid, unsigned long addr, size_t size);
+void    *peekdata(pid_t pid, unsigned long addr, size_t size, size_t sizeof_type);
 
 char    **peekdoubleptr(pid_t pid, unsigned long addr) ;
 char	**ft_split(char const *str, char set);
-char    **get_syscall_names();
+//char    **get_syscall_names();

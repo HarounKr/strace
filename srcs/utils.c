@@ -129,6 +129,6 @@ void free_exec_struct(t_exec *exec) {
 		free(exec->absolute_path);
 	if (exec->args)
 		free_tab(exec->args);
-	if (exec->syscall_names)
-		free_tab(exec->syscall_names);
+	// if (exec->syscall_names)
+	// 	free_tab(exec->syscall_names);
 } 

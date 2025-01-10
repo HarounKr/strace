@@ -1,8 +1,6 @@
 #include "../inc/ft_strace.h"
 
-// /usr/include/x86_64-linux-gnu/asm/unistd_64.h ==> valeurs des syscall 
-// https://man7.org/linux/man-pages/man2/ptrace.2.html
-// https://man7.org/linux/man-pages/man2/process_vm_readv.2.html
+// /usr/include/x86_64-linux-gnu/asm/unistd_64.h ==> valeurs des syscall
 
 static uint64_t *get_regs_addr(union x86_regs_union *reg_t, bool is_64) {
     uint64_t *regs_addr = calloc(sizeof(long long int), 6);
@@ -80,23 +78,46 @@ int ptrace_init(pid_t pid) {
     return 0;
 }
 
-int syscall_matches(t_exec *exec, unsigned long syscall_num) {
-    int total_syscalls = tab_size(exec->syscall_names);
+static t_syscall *syscall_matches(unsigned long reg_syscall_num, t_syscall syscalls[]) {
     
-    if ((int) syscall_num < total_syscalls) {
-        for (int i = 0; syscalls[i].name != NULL; i++) {
-            if (!strcmp(syscalls[i].name, exec->syscall_names[syscall_num]))
-                return i;
+    for (int i = 0; syscalls[i].name != NULL;  i++) {
+        if ((unsigned long) syscalls[i].num == reg_syscall_num)
+            return &syscalls[i];
+    }
+    return NULL;
+}
+
+#include <stdio.h>
+
+void debug_syscall(t_syscall *syscall) {
+    if (!syscall) {
+        printf("Syscall structure is NULL\n");
+        return;
+    }
+
+    printf("Syscall Debug Information:\n");
+    printf("  Number: %d\n", syscall->num);
+    printf("  Name: %s\n", syscall->name ? syscall->name : "NULL");
+    printf("  Argument Count: %d\n", syscall->arg_count);
+
+    printf("  Argument Types:\n");
+    for (int i = 0; i < 6; i++) {
+        if (syscall->arg_types[i]) {
+            printf("    [%d]: %s\n", i, syscall->arg_types[i]);
+        } else {
+            printf("    [%d]: NULL\n", i);
         }
     }
-    return -1;
+
+    printf("  Return Type: %s\n", syscall->ret_type ? syscall->ret_type : "NULL");
+    printf("\n");
 }
 
 
-int is_syscall(pid_t pid, t_exec *exec, union x86_regs_union *regs_t, struct iovec *io, bool *is_preexit) {
-    memset(regs_t, 0, sizeof(*regs_t));
+int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *is_preexit) {
+    memset(regs_t, 0, sizeof(union x86_regs_union));
     io->iov_base = regs_t;
-    io->iov_len = sizeof(*regs_t);
+    io->iov_len = sizeof(union x86_regs_union);
 
     if (ptrace(PTRACE_GETREGSET, pid, (void*)NT_PRSTATUS, io) == -1) {
         perror("PTRACE_GETREGSET");
@@ -114,23 +135,26 @@ int is_syscall(pid_t pid, t_exec *exec, union x86_regs_union *regs_t, struct iov
         return -1;
     }
 
-    unsigned long syscall_num = is_64 ? regs_t->regs64.orig_rax : regs_t->regs32.orig_eax;
-
-    int index = syscall_matches(exec, syscall_num);
-    if (index >= 0) {
-        int n_args = syscalls[index].arg_count;
+    unsigned long reg_syscall_num = is_64 ? regs_t->regs64.orig_rax : regs_t->regs32.orig_eax;
+    
+    t_syscall *syscall = syscall_matches(reg_syscall_num, is_64 ? syscalls64 : syscalls32);
+    if (syscall) {
+        //debug_syscall(syscall);
+        //return 0;
+        int n_args = syscall->arg_count;
         if (*is_preexit) {
             uint64_t *regs_addr = get_regs_addr(regs_t, is_64);
             if (!regs_addr)
                 return -1;
-            print_args(regs_addr, n_args, index, pid);
-            if (!strncmp(syscalls[index].name, "exit", strlen("exit"))) {
+            print_args(regs_addr, n_args, syscall, pid);
+            if (!strncmp(syscall->name, "exit", strlen("exit"))) {
                 fprintf(stdout, "?\n");
             }
             free(regs_addr);
         } else {
+        
             uint64_t ret_value = is_64 ? regs_t->regs64.rax : regs_t->regs32.eax;
-            print_ret_value(ret_value, index);
+            print_ret_value(ret_value, syscall->ret_type);
         }
         *is_preexit = !(*is_preexit);
     }
@@ -171,7 +195,7 @@ int trace_exec(t_exec *exec) {
                 is_alive = false;
             } else if (WIFSTOPPED(status)) {
                 if (WSTOPSIG(status) == (SIGTRAP | 0x80)) {
-                    if (is_syscall(pid, exec, &regs_t, &io, &is_preexit) == -1) {
+                    if (is_syscall(pid, &regs_t, &io, &is_preexit) == -1) {
                         fprintf(stderr, "ft_strace: Erreur lors du traitement d'un syscall\n");
                         return -1;
                     }
