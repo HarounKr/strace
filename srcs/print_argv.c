@@ -1,5 +1,24 @@
 #include "../inc/ft_strace.h"
 
+void print_read_str(char *buf, size_t len, size_t max_print) {
+    size_t i;
+    putchar('"');
+
+    for (i = 0; i < len && i < max_print; i++) {
+        unsigned char c = buf[i];
+        if (c == '\n') {
+            printf("\\n");
+        } else if (c == '\t') {
+            printf("\\t");
+        } else if (isprint(c)) {
+            putchar(c);
+        } else {
+            printf("\\%01o", c);
+        }
+    }
+    printf("\"...");
+}
+
 static void int_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
     (void) arg_type;
     (void) pid;
@@ -27,7 +46,10 @@ static void unsigned_long_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
 static void charptr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
     char *str = peekdata(pid, reg_addr, 4096, sizeof(char));
     if (str) {
-        fprintf(stdout, "\"%s\"", str);
+        if (read_syscall)
+            print_read_str(str, 40, 40);
+        else
+            fprintf(stdout, "\"%s\"", str);
         free(str);
     } else
         fprintf(stdout, "%s", arg_type);
@@ -67,10 +89,8 @@ t_type types[] = {
     {"char *", charptr_type},
     {"char **", chardoubleptr_type},
     {"int *", intptr_type},
-    
+    {"void", addr_type},
     {"void *", addr_type},
     {"addr", addr_type},
-    {"sigset_t", addr_type},
-    {"fd_set", addr_type},
     {NULL, NULL},
 };

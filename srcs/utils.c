@@ -171,3 +171,39 @@ char *to_string(char **tab) {
 
     return str;
 }
+
+void debug_syscall(t_syscall *syscall) {
+    if (!syscall) {
+        printf("Syscall structure is NULL\n");
+        return;
+    }
+
+    printf("Syscall Debug Information:\n");
+    printf("  Number: %d\n", syscall->num);
+    printf("  Name: %s\n", syscall->name ? syscall->name : "NULL");
+    printf("  Argument Count: %d\n", syscall->arg_count);
+
+    printf("  Argument Types:\n");
+    for (int i = 0; i < 6; i++) {
+        if (syscall->arg_types[i]) {
+            printf("    [%d]: %s\n", i, syscall->arg_types[i]);
+        } else {
+            printf("    [%d]: NULL\n", i);
+        }
+    }
+
+    printf("  Return Type: %s\n", syscall->ret_type ? syscall->ret_type : "NULL");
+    printf("\n");
+}
+
+bool is_read_syscall(int syscall_num) {
+    int read_syscall_numbers[] = {0, 17, 19, 89, 267, 295, 327, 3, 85, 180, 305};
+
+    for (int i = 0; i <= 10; i++) {
+        if (syscall_num == read_syscall_numbers[i]) {
+			read_syscall = true;
+            return true;
+        }
+    }
+    return false;
+}

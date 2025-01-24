@@ -1,5 +1,6 @@
 #include "../inc/ft_strace.h"
 
+bool read_syscall = false;
 
 static int init_exec_struct(int ac, char **av, char **envp, t_exec *exec) {
     int len_envp = 0;

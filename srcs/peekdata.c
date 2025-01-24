@@ -57,7 +57,7 @@ unsigned long peekptr(pid_t pid, unsigned long addr) {
 }
 
 void *peekdata(pid_t pid, unsigned long addr, size_t size, size_t sizeof_type) {
-
+    
     if (is_addr_mapped(pid, addr)) {
         char mem_path[64];
         snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);

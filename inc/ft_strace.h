@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/user.h>
+#include <ctype.h>
 //#include <sys/siginfo.h>
 
 #define PATH_MAX 4096
@@ -72,19 +73,23 @@ union x86_regs_union {
     struct user_regs_struct      regs64;
     struct i386_user_regs_struct regs32;
 };
-
 extern  t_syscall syscalls32[];
 extern  t_syscall syscalls64[];
+
 extern t_type types[];
+extern int read_buffer_size;
+extern bool read_syscall;
 
 void	free_tab(char **tab);
 void    free_exec_struct(t_exec *exec);
 void    print_args(uint64_t *regs_addr, int n_args, t_syscall *syscall, pid_t pid);
 void    print_ret_value(uint64_t ret_value, char *ret_type);
+void    debug_syscall(t_syscall *syscall);
 
 int     trace_exec(t_exec *exec);
 size_t  tab_size(char **tab);
 unsigned long peekptr(pid_t pid, unsigned long addr);
+bool    is_read_syscall(int syscall_num);
 
 char    *get_absolute_path(const char *cmd);
 char	*ft_substr(char const *s, unsigned int start, size_t len);

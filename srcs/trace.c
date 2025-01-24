@@ -1,5 +1,5 @@
 #include "../inc/ft_strace.h"
-
+uint64_t *regs_addr;
 // /usr/include/x86_64-linux-gnu/asm/unistd_64.h ==> valeurs des syscall
 
 static uint64_t *get_regs_addr(union x86_regs_union *reg_t, bool is_64) {
@@ -87,31 +87,6 @@ static t_syscall *syscall_matches(unsigned long reg_syscall_num, t_syscall sysca
     return NULL;
 }
 
-void debug_syscall(t_syscall *syscall) {
-    if (!syscall) {
-        printf("Syscall structure is NULL\n");
-        return;
-    }
-
-    printf("Syscall Debug Information:\n");
-    printf("  Number: %d\n", syscall->num);
-    printf("  Name: %s\n", syscall->name ? syscall->name : "NULL");
-    printf("  Argument Count: %d\n", syscall->arg_count);
-
-    printf("  Argument Types:\n");
-    for (int i = 0; i < 6; i++) {
-        if (syscall->arg_types[i]) {
-            printf("    [%d]: %s\n", i, syscall->arg_types[i]);
-        } else {
-            printf("    [%d]: NULL\n", i);
-        }
-    }
-
-    printf("  Return Type: %s\n", syscall->ret_type ? syscall->ret_type : "NULL");
-    printf("\n");
-}
-
-
 int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *is_preexit) {
     memset(regs_t, 0, sizeof(union x86_regs_union));
     io->iov_base = regs_t;
@@ -137,20 +112,23 @@ int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *
     
     t_syscall *syscall = syscall_matches(reg_syscall_num, is_64 ? syscalls64 : syscalls32);
     if (syscall) {
-        //debug_syscall(syscall);
-        //return 0;
         int n_args = syscall->arg_count;
         if (*is_preexit) {
-            uint64_t *regs_addr = get_regs_addr(regs_t, is_64);
+            regs_addr = get_regs_addr(regs_t, is_64);
             if (!regs_addr)
                 return -1;
-            print_args(regs_addr, n_args, syscall, pid);
-            if (!strncmp(syscall->name, "exit", strlen("exit"))) {
-                fprintf(stdout, "?\n");
+            if (is_read_syscall(syscall->num) == false) { 
+                print_args(regs_addr, n_args, syscall, pid);
+                if (!strncmp(syscall->name, "exit", strlen("exit"))) {
+                    fprintf(stdout, "?\n");
+                }
+            }
+        } else {
+            if (is_read_syscall(syscall->num)) {
+                printf("num : %d\n", syscall->num);
+                print_args(regs_addr, n_args, syscall, pid);
             }
             free(regs_addr);
-        } else {
-        
             uint64_t ret_value = is_64 ? regs_t->regs64.rax : regs_t->regs32.eax;
             print_ret_value(ret_value, syscall->ret_type);
         }
@@ -179,6 +157,7 @@ int trace_exec(t_exec *exec) {
             return -1;
         }
         while (is_alive) {
+            read_syscall = false;
             sigset_empty();
             waitpid(pid, &status, 0);
             sigset_blocked();
