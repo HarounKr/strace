@@ -1,19 +1,19 @@
 #include "../inc/ft_strace.h"
 
-void print_read_str(char *buf, size_t len, size_t max_print) {
-    size_t i;
-    putchar('"');
+void print_read_str(char *buf, int len) {
+    int i;
+    fprintf(stdout, "\"");
 
-    for (i = 0; i < len && i < max_print; i++) {
+    for (i = 0; i < len; i++) {
         unsigned char c = buf[i];
         if (c == '\n') {
-            printf("\\n");
+            fprintf(stdout,"\\n");
         } else if (c == '\t') {
-            printf("\\t");
+            fprintf(stdout,"\\t");
         } else if (isprint(c)) {
-            putchar(c);
+            fprintf("%c", c);
         } else {
-            printf("\\%01o", c);
+            fprintf("\\%01o", c);
         }
     }
     printf("\"...");
@@ -47,7 +47,7 @@ static void charptr_type(char *arg_type, pid_t pid, uint64_t reg_addr) {
     char *str = peekdata(pid, reg_addr, 4096, sizeof(char));
     if (str) {
         if (read_syscall)
-            print_read_str(str, 40, 40);
+            print_read_str(str, 40);
         else
             fprintf(stdout, "\"%s\"", str);
         free(str);
