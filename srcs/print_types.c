@@ -67,6 +67,7 @@ t_type types[] = {
     {"char *", charptr_type},
     {"char **", chardoubleptr_type},
     {"int *", intptr_type},
+    
     {"void *", addr_type},
     {"addr", addr_type},
     {"sigset_t", addr_type},

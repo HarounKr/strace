@@ -87,8 +87,6 @@ static t_syscall *syscall_matches(unsigned long reg_syscall_num, t_syscall sysca
     return NULL;
 }
 
-#include <stdio.h>
-
 void debug_syscall(t_syscall *syscall) {
     if (!syscall) {
         printf("Syscall structure is NULL\n");
