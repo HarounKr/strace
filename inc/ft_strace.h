@@ -85,6 +85,9 @@ void    free_exec_struct(t_exec *exec);
 void    print_args(uint64_t *regs_addr, int n_args, t_syscall *syscall, pid_t pid);
 void    print_ret_value(uint64_t ret_value, char *ret_type);
 void    debug_syscall(t_syscall *syscall);
+void    sigset_empty();
+void    sigset_blocked();
+void    handle_sig(int signum, pid_t pid);
 
 int     trace_exec(t_exec *exec);
 size_t  tab_size(char **tab);
