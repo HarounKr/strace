@@ -118,11 +118,11 @@ static void format_and_print_arg(char *arg_type, pid_t pid, uint64_t reg_addr) {
 }
 
 void print_args(uint64_t *regs_addr, int n_args, t_syscall *syscall, pid_t pid) {
+    fprintf(stdout, "%s(", syscall->name);
     if (n_args == 0) {
-        fprintf(stdout, "void)");
+        fprintf(stdout, "void) = ");
         return ;
     }
-    fprintf(stdout, "%s(", syscall->name);
 
     for (int i = 0; i < n_args; i++) {
         uint64_t addr = regs_addr[i];

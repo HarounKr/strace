@@ -6,8 +6,7 @@ static int sigint_received = 0;
 
 static void handle_sigint(int sig)
 {
-    if (sig == SIGINT)
-        sigint_received = 1;
+    sigint_received = sig;
 }
 
 static void install_signal_handler(void)
@@ -112,7 +111,6 @@ int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *
     }
 
     unsigned long reg_syscall_num = is_64 ? regs_t->regs64.orig_rax : regs_t->regs32.orig_eax;
-    
     t_syscall *syscall = syscall_matches(reg_syscall_num, is_64 ? syscalls64 : syscalls32);
     if (syscall) {
         int n_args = syscall->arg_count;
@@ -129,6 +127,7 @@ int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *
                 }
             }
         } else {
+            
             if (is_read_syscall(syscall->num)) {
                 print_args(regs_addr, n_args, syscall, pid);
             }
@@ -142,6 +141,22 @@ int is_syscall(pid_t pid, union x86_regs_union *regs_t, struct iovec *io, bool *
         *is_preexit = !(*is_preexit);
     }
     return 0;
+}
+
+void sig_int(pid_t pid) {
+    siginfo_t siginfo;
+    if (ptrace(PTRACE_GETSIGINFO, pid, 0, &siginfo) == -1)
+        fprintf(stderr, "ft_strace: Process %d detached\n", pid);
+    fprintf(stderr, "^C--- SIGINT {si_signo=SIGINT, si_code=%d} ---\n", siginfo.si_code);
+    fprintf(stderr, "ft_strace: Process %d detached\n", pid);
+}
+
+void sigwinch(pid_t pid) {
+    siginfo_t siginfo;
+    // pid_t u_id = getuid();
+    if (ptrace(PTRACE_GETSIGINFO, pid, 0, &siginfo) == -1)
+        perror("ptrace getsiginfo");
+    fprintf(stdout, "--- SIGWINCH {si_signo=SIGWINCH, si_code=%d, si_pid=%d, si_uid=%d} ---\n", siginfo.si_code, siginfo.si_pid, siginfo.si_uid);
 }
 
 int trace_exec(t_exec *exec) {
@@ -169,18 +184,10 @@ int trace_exec(t_exec *exec) {
             sigset_empty();
             waitpid(pid, &status, WUNTRACED);
             sigset_blocked();
-            if (sigint_received) {
-                siginfo_t siginfo;
-                if (ptrace(PTRACE_GETSIGINFO, pid, 0, &siginfo) == -1) {
-                    perror("ptrace getsifingo");
-                    return -1;
-                }
-                fprintf(stdout, "si_signo%d , si_code%d\n", siginfo.si_signo, siginfo.si_code);
-                fprintf(stderr, "^C--- SIGINT {si_signo=SIGINT, si_code=SI_KERNEL} ---\n");
+            if (sigint_received == SIGINT) {
+                sig_int(pid);
                 kill(pid, SIGINT);
-                fprintf(stderr, "ft_strace: Process %d detached\n", pid);
-                is_alive = 0;
-                break;
+                is_alive = false;
             }
             if (WIFEXITED(status)) {
                 exit_code = WEXITSTATUS(status);
@@ -192,7 +199,10 @@ int trace_exec(t_exec *exec) {
                 is_alive = false;
             } else if (WIFSTOPPED(status)) {
                 int stop_signal = WSTOPSIG(status);
-                if (stop_signal == SIGSEGV) {
+                if (stop_signal == SIGWINCH) {
+                    sigwinch(pid);
+                }
+                else if (stop_signal == SIGSEGV) {
                     fprintf(stderr, "+++ killed by SIGSEGV (core dumped) +++\n");
                     sleep(1);
                     fprintf(stderr, "Segmentation fault (core dumped)\n");
