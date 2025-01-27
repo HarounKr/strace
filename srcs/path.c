@@ -19,8 +19,11 @@ char *get_absolute_path(const char *cmd) {
         }
         free_tab(split_path);
     }
-    if (!path_found)
-        absolute_path = ft_split(cmd, ' ')[0];
+    if (!path_found) {
+        char **temp = ft_split(cmd, ' ');
+        absolute_path = strdup(temp[0]);
+        free_tab(temp);
+    }
         
     return absolute_path;
 }

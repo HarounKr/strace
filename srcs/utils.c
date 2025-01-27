@@ -111,6 +111,7 @@ void	free_tab(char **tab)
 		i++;
 	}
 	free(tab);
+	tab = NULL;
 }
 
 size_t tab_size(char **tab) {
@@ -197,7 +198,7 @@ void debug_syscall(t_syscall *syscall) {
 }
 
 bool is_read_syscall(int syscall_num) {
-    int read_syscall_numbers[] = {0, 17, 19, 89, 267, 295, 327, 3, 85, 180, 305};
+    int read_syscall_numbers[] = {0, 17, 19, 89, 267, 327, 3, 85, 180, 305};
 
     for (int i = 0; i <= 10; i++) {
         if (syscall_num == read_syscall_numbers[i]) {
