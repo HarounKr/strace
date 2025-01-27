@@ -8,14 +8,6 @@ static void handle_sigint(int sig) {
     sigint_received = sig;
 }
 
-static void install_signal_handler() {
-    struct sigaction sa;
-    sa.sa_handler = handle_sigint;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
-}
-
 static uint64_t *get_regs_addr(union x86_regs_union *reg_t, bool is_64) {
     uint64_t *regs_addr = calloc(sizeof(long long int), 6);
     if (!regs_addr) {
@@ -142,14 +134,14 @@ int trace_exec(t_exec *exec) {
     } else {
         union x86_regs_union regs_t;
         struct iovec io;
-        install_signal_handler();
+        signal(SIGINT, handle_sigint);
         if (ptrace_init(pid) == -1) {
             return -1;
         }
         while (is_alive) {
             read_syscall = false;
             sigset_empty();
-            waitpid(pid, &status, WUNTRACED);
+            waitpid(pid, &status, 0);
             sigset_blocked();
             if (sigint_received == SIGINT) {
                 handle_sig(SIGINT, pid);
@@ -165,23 +157,28 @@ int trace_exec(t_exec *exec) {
                 is_alive = false;
             } else if (WIFSTOPPED(status)) {
                 int stop_signal = WSTOPSIG(status);
-                if (stop_signal == SIGWINCH) {
-                    handle_sig(SIGWINCH, pid);
-                } else if (stop_signal == SIGCHLD) {
-                    handle_sig(SIGCHLD, pid);
-                }
-                else if (stop_signal == SIGSEGV) {
-                    fprintf(stderr, "+++ killed by SIGSEGV (core dumped) +++\n");
-                    sleep(1);
-                    fprintf(stderr, "Segmentation fault (core dumped)\n");
-                    is_alive = false;
-                } else if (stop_signal == (SIGTRAP | 0x80)) {
+                if (stop_signal == (SIGTRAP | 0x80)) {
                         if (is_syscall(pid, &regs_t, &io, &is_preexit) == -1) {
                             fprintf(stderr, "ft_strace: Erreur lors du traitement d'un syscall\n");
                             return -1;
                         }
                 }
-            } 
+                else {
+                    if (stop_signal == SIGWINCH) {
+                        handle_sig(SIGWINCH, pid);
+                    } else if (stop_signal == SIGCHLD) {
+                        handle_sig(SIGCHLD, pid);
+                    } else if (stop_signal == SIGINT) {
+                        printf("SIGINT\n");
+                    }
+                    else if (stop_signal == SIGSEGV) {
+                        fprintf(stderr, "+++ killed by SIGSEGV (core dumped) +++\n");
+                        sleep(1);
+                        fprintf(stderr, "Segmentation fault (core dumped)\n");
+                        is_alive = false;
+                    }
+                }
+            }
             if (is_alive) {
                 ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
             }
