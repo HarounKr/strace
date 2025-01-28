@@ -200,7 +200,8 @@ void debug_syscall(t_syscall *syscall) {
 bool is_read_syscall(int syscall_num) {
     int read_syscall_numbers[] = {0, 17, 19, 89, 267, 327, 3, 85, 180, 305};
 
-    for (int i = 0; i <= 10; i++) {
+	int size = sizeof(read_syscall_numbers) / sizeof(read_syscall_numbers[0]);
+    for (int i = 0; i < size; i++) {
         if (syscall_num == read_syscall_numbers[i]) {
 			read_syscall = true;
             return true;

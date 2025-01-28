@@ -168,13 +168,9 @@ int trace_exec(t_exec *exec) {
                         handle_sig(SIGWINCH, pid);
                     } else if (stop_signal == SIGCHLD) {
                         handle_sig(SIGCHLD, pid);
-                    } else if (stop_signal == SIGINT) {
-                        printf("SIGINT\n");
                     }
                     else if (stop_signal == SIGSEGV) {
-                        fprintf(stderr, "+++ killed by SIGSEGV (core dumped) +++\n");
-                        sleep(1);
-                        fprintf(stderr, "Segmentation fault (core dumped)\n");
+                        handle_sig(SIGSEGV, pid);
                         is_alive = false;
                     }
                 }

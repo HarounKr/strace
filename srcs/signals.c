@@ -38,5 +38,8 @@ void handle_sig(int signum, pid_t pid) {
     } else if (signum == SIGCHLD) {
         fprintf(stdout, "--- SIGCHLD {si_signo=SIGCHLD, si_code=%d, si_pid=%d, si_uid=%d, si_status=%d, si_utime=%ld, si_stime=%ld} ---\n",
         siginfo.si_code, siginfo.si_pid, siginfo.si_uid, siginfo.si_status, siginfo.si_utime, siginfo.si_stime);
+    } else if (signum == SIGSEGV) {
+        fprintf(stdout, "--- SIGSEGV {si_signo=SIGSEGV, si_code=%d, si_addr=%p} ---\n", siginfo.si_code, (void *)siginfo.si_addr);
+        fprintf(stderr, "+++ killed by SIGSEGV (core dumped) +++\n");
     }
 }

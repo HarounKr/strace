@@ -99,7 +99,9 @@ char **peekdoubleptr(pid_t pid, unsigned long addr) {
     unsigned long i = 0;
     char **doubleptr = NULL;
 
+    // calculer le nombre d elements pour allouer
     while (is_alive) {
+        // addr + i * sizeof(ptr_value) avance au pointeur suivant
         unsigned long ptr_value = peekptr(pid, addr + i * sizeof(ptr_value));
         if (ptr_value == 0 || (long) ptr_value == -1)
             break;
