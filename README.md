@@ -4,11 +4,11 @@
 
 Ce projet a pour objectif de **reproduire le comportement de l'outil `strace`**, qui permet de tracer les **appels système** effectués par un programme en cours d'exécution.
 
-Il est développé en **C** et repose principalement sur l'utilisation de **`ptrace`**, une fonction système qui permet à un processus (le traceur) d'observer et de contrôler l'exécution d'un autre (le tracé).
+Il est développé en **C** et repose principalement sur l'utilisation de **`ptrace`**, un appel système qui permet à un processus (le traceur) d'observer et de contrôler l'exécution d'un autre (le tracé).
 
 ## À quoi sert `strace` ?
 
-`strace` est un outil essentiel en environnement Unix/Linux, utilisé principalement pour :
+`strace` est un outil en environnement Unix/Linux, utilisé principalement pour :
 
 - **Déboguer un programme** : voir quels appels système sont effectués, à quel moment, et avec quels arguments.
 - **Comprendre le comportement d’un binaire** sans avoir accès au code source.
@@ -25,7 +25,7 @@ Il est développé en **C** et repose principalement sur l'utilisation de **`ptr
 - **Gestion des signaux** reçus par le processus tracé
 
 ## Utilisation
-** Cloner le repo **
+**Cloner le repo**
 
 Compilation :
 
